@@ -108,6 +108,7 @@ selene src
 | ![Ascension](docs/screenshots/06-skill-t-ascension.png) | ![Passive tree](docs/screenshots/08-passive-tree.png) |
 | ![Frost gem socketed](docs/screenshots/09-gem-socket-frost.png) | ![Frost blade rain](docs/screenshots/10-frost-blade-rain.png) |
 | ![Boss slam telegraph](docs/screenshots/12-boss-phase1-slam.png) | ![Boss enraged](docs/screenshots/13-boss-phase2-enrage.png) |
+| ![Phone HUD with touch buttons](docs/screenshots/15-phone-hud-touch.png) | ![Passive tree on a phone](docs/screenshots/16-phone-passive-tree.png) |
 
 ## Docs
 

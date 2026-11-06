@@ -19,7 +19,8 @@ local make = Theme.make
 local colors = Theme.colors
 
 local NODE_SIZE: { [string]: number } = { start = 24, small = 18, notable = 30, keystone = 44 }
-local ZOOM_MIN, ZOOM_MAX = 0.5, 1.6
+-- The low end lets the whole tree fit a landscape phone (about 390 px tall) under the header.
+local ZOOM_MIN, ZOOM_MAX = 0.2, 1.6
 local HEADER_WIDTH, HEADER_HEIGHT = 780, 64
 local TOOLTIP_WIDTH = 290
 local RING_RADII = { 200, 400, 600 }

@@ -4,6 +4,7 @@
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local Skills = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Skills"))
 local Theme = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("Theme"))
@@ -13,6 +14,54 @@ local Mobile = {}
 Mobile.PASSIVES_ACTION = "AstralPassives"
 Mobile.GEMS_ACTION = "AstralGems"
 
+-- ContextActionService shows at most 7 touch buttons; actions past that get one of these instead.
+local extraButtons: { [string]: TextButton } = {}
+local extraGui: ScreenGui? = nil
+
+function Mobile.extraButton(action: string, title: string, onPress: () -> ())
+	if not UserInputService.TouchEnabled then
+		return
+	end
+	local gui = extraGui
+	if not gui then
+		local created = Instance.new("ScreenGui")
+		created.Name = "AstralTouchExtras"
+		created.ResetOnSpawn = false
+		created.DisplayOrder = 5
+		created.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+		gui = created
+		extraGui = created
+	end
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.Parent = gui
+	local button = Instance.new("TextButton")
+	button.Name = action
+	button.BackgroundColor3 = Color3.new(0, 0, 0)
+	button.BackgroundTransparency = 0.5
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = Enum.Font.GothamBold
+	button.TextScaled = true
+	button.Text = title
+	button.AutoButtonColor = true
+	button.Parent = holder
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = button
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.Transparency = 0.6
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = button
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0.22, 0)
+	padding.PaddingBottom = UDim.new(0.22, 0)
+	padding.Parent = button
+	button.Activated:Connect(onPress)
+	extraButtons[action] = button
+end
+
 function Mobile.skillAction(skillId: string): string
 	return "AstralCast_" .. skillId
 end
@@ -20,6 +69,7 @@ end
 type Placement = { action: string, ring: number, angle: number }
 
 -- Angles are screen-space degrees: 180 is left of the jump button, 270 is straight above it.
+-- P and G sit above the skill arc: lower left angles end up under the HUD hotbar on phones.
 local function placements(): { Placement }
 	local list: { Placement } = { { action = Mobile.skillAction("basic"), ring = 1, angle = 225 } }
 	local index = 0
@@ -29,8 +79,8 @@ local function placements(): { Placement }
 			index += 1
 		end
 	end
-	table.insert(list, { action = Mobile.PASSIVES_ACTION, ring = 3, angle = 205 })
-	table.insert(list, { action = Mobile.GEMS_ACTION, ring = 3, angle = 245 })
+	table.insert(list, { action = Mobile.PASSIVES_ACTION, ring = 3, angle = 272 })
+	table.insert(list, { action = Mobile.GEMS_ACTION, ring = 3, angle = 240 })
 	return list
 end
 
@@ -55,7 +105,7 @@ local function layout()
 	distances[3] = distances[2] + sizes[2] / 2 + sizes[3] / 2 + gap
 
 	for _, place in placements() do
-		local button = ContextActionService:GetButton(place.action)
+		local button: GuiObject? = ContextActionService:GetButton(place.action) or extraButtons[place.action]
 		local frame = button and button.Parent
 		local screen = button and button:FindFirstAncestorWhichIsA("LayerCollector")
 		if button and frame and frame:IsA("GuiObject") and screen and screen:IsA("ScreenGui") then

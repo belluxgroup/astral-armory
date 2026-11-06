@@ -171,7 +171,8 @@ function Input.start(ui: UIHandle)
 			return Enum.ContextActionResult.Pass
 		end, touchButton, key)
 	end
-	bindMenu(Mobile.PASSIVES_ACTION, Enum.KeyCode.P, true, ui.togglePassives)
+	bindMenu(Mobile.PASSIVES_ACTION, Enum.KeyCode.P, false, ui.togglePassives)
+	Mobile.extraButton(Mobile.PASSIVES_ACTION, "P", ui.togglePassives)
 	bindMenu(Mobile.GEMS_ACTION, Enum.KeyCode.G, true, ui.toggleGems)
 	-- The altar prompt also summons; B is the keyboard shortcut, touch uses the HUD button.
 	bindMenu("AstralSummonBoss", Enum.KeyCode.B, false, summonBoss)
