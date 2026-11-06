@@ -85,8 +85,11 @@ local START_ONLY: { [string]: true } = { [Passives.startId] = true }
 -- Tree bounds, for fitting the view and limiting pan.
 local minX, maxX, minY, maxY = math.huge, -math.huge, math.huge, -math.huge
 for _, node in Passives.nodes do
-	minX, maxX = math.min(minX, node.x), math.max(maxX, node.x)
-	minY, maxY = math.min(minY, node.y), math.max(maxY, node.y)
+	-- Keystones carry a region label at 1.16x their position; include it so the fit keeps it on screen.
+	local reach = if node.kind == "keystone" then 1.16 else 1
+	local x, y = node.x * reach, node.y * reach + (if node.kind == "keystone" then 6 else 0)
+	minX, maxX = math.min(minX, node.x, x - 60), math.max(maxX, node.x, x + 60)
+	minY, maxY = math.min(minY, node.y, y - 20), math.max(maxY, node.y, y + 20)
 end
 
 local Screen = {}
