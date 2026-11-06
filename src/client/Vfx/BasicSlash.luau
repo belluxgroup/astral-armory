@@ -1,19 +1,17 @@
 --!strict
 -- Chém (basic, 3-hit combo).
 --
---   swing  the local caster plays Config.Anims.slash (it replicates to
---          others); a Trail between the sword's TrailTop/TrailBottom draws the
---          arc for the swing window
+--   swing  Vfx/Poses plays the combo pose (Config.PoseClips basic_1..3) on
+--          every client; a Trail between the sword's TrailTop/TrailBottom draws
+--          the arc for the swing window
 --   flash  a crescent of Beams sweeps across the 8-stud strike zone in 0.09 s,
 --          then widens and fades; hits 1 and 2 cut opposite diagonals
 --   hit 3  the finisher: a wider, brighter, flat crescent with a second echo
 --          arc, a ground ring, sparks and a small shake for the caster
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Anims = require(Shared:WaitForChild("Config"):WaitForChild("Anims"))
 local VfxPalette = require(Shared:WaitForChild("VfxPalette"))
 local Common = require(script.Parent.Common)
 local Impact = require(script.Parent.Impact)
@@ -25,31 +23,6 @@ local BasicSlash = {}
 local SWING_WINDOW = 0.28
 local DRAW_TIME = 0.09
 local FADE_TIME = 0.22
-
-local slashAnimation = Instance.new("Animation")
-slashAnimation.AnimationId = Anims.slash
-local tracks: { [Animator]: AnimationTrack } = setmetatable({}, { __mode = "k" }) :: any
-
-local function playSwing(character: Model, heavy: boolean)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-	if not animator then
-		return
-	end
-	local track = tracks[animator]
-	if not track then
-		local ok, loaded = pcall(function()
-			return animator:LoadAnimation(slashAnimation)
-		end)
-		if not ok or not loaded then
-			return
-		end
-		loaded.Priority = Enum.AnimationPriority.Action
-		tracks[animator] = loaded
-		track = loaded
-	end
-	track:Play(0.05, 1, if heavy then 1.15 else 1.5)
-end
 
 -- Arc layout per combo hit: start and end angles (degrees, 0 = forward,
 -- positive = left), plane tilt around the aim axis, radius, width.
@@ -70,11 +43,6 @@ function BasicSlash.play(event: FxEvent)
 	local root = Common.rootOf(character)
 	local sword = Common.swordOf(character)
 	local fx = Common.effect("BasicSlash", SWING_WINDOW + DRAW_TIME + FADE_TIME + 0.2)
-
-	local localPlayer = Players.LocalPlayer
-	if character and localPlayer and caster == localPlayer.UserId then
-		playSwing(character, heavy)
-	end
 
 	-- Sword trail for the swing window.
 	if sword then

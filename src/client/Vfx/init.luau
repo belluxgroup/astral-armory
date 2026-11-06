@@ -9,6 +9,7 @@ local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net")
 local Ascension = require(script.Ascension)
 local BossTelegraph = require(script.BossTelegraph)
 local Common = require(script.Common)
+local Poses = require(script.Poses)
 
 type FxEvent = Common.FxEvent
 type Handler = { play: (event: FxEvent) -> () }
@@ -41,6 +42,11 @@ local function dispatch(event: FxEvent)
 	-- Stale events are dropped, except ascension: its aura must still show.
 	if event.skillId ~= "ascension" and Common.age(event.serverTime) > Common.MAX_EVENT_AGE then
 		return
+	end
+	-- The caster's body pose (sword swing, cast gesture) plays alongside the effect.
+	local okPose, poseErr = pcall(Poses.forEvent, event)
+	if not okPose then
+		warn(`[Vfx] pose for {event.skillId} failed: {poseErr}`)
 	end
 	-- Each effect runs in its own thread so one failure never breaks the rest.
 	task.spawn(function()
