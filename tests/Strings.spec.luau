@@ -3,6 +3,7 @@ local Strings = require("../src/shared/Config/Strings")
 local Skills = require("../src/shared/Config/Skills")
 local Gems = require("../src/shared/Config/Gems")
 local Passives = require("../src/shared/Config/Passives")
+local Enemies = require("../src/shared/Config/Enemies")
 
 local function has(key: string): boolean
 	local v = (Strings :: any)[key]
@@ -50,6 +51,11 @@ return function(t)
 		for _, kind in { "start", "small", "notable", "keystone" } do
 			t.ok(has("kind_" .. kind), "kind_" .. kind)
 		end
+	end)
+	t.test("boss text names the Golden Tyrant", function()
+		local name = Enemies.eclipse_warden.displayName
+		t.eq(Strings.bossName, name)
+		t.ok(string.find(Strings.bossDefeated, name, 1, true) ~= nil, "bossDefeated")
 	end)
 	t.test("every reason has text", function()
 		for _, r in { "no_sockets", "bad_slot", "tag", "element", "duplicate" } do

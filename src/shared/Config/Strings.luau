@@ -32,11 +32,11 @@ local Strings: { [string]: string } = {
 
 	-- boss
 	summonBoss = "Triệu hồi Boss",
-	bossName = "Hộ Vệ Nhật Thực",
+	bossName = "Bạo Quân Hoàng Kim",
 	bossNeedLevel = "Cần đạt cấp 8 để triệu hồi",
 	bossCooldown = "Tế đàn đang hồi lại",
 	bossTooFar = "Hãy đến gần tế đàn để triệu hồi",
-	bossDefeated = "Đã hạ gục Hộ Vệ Nhật Thực!",
+	bossDefeated = "Đã hạ gục Bạo Quân Hoàng Kim!",
 	enemy_hollow_knight = "Hiệp Sĩ Rỗng",
 
 	-- gem socket reasons (GemRules.canSocket)

@@ -45,8 +45,13 @@ PC and the camera center on touch.
   at most one per skill), Nổ Lan (bigger area plus an impact burst), Tốc Thi (shorter cooldown).
 - **Enemies.** Hollow knights in an inner ring (levels 1–3) and an outer ring (4–8), one AI heartbeat
   for all of them, XP shared by everyone who hit, a 12% gem drop.
-- **Boss.** The Eclipse Warden: slams with a 1.2 s telegraph, and below 50% HP enrages and adds shadow
-  blades. The altar cools down for 60 s after a kill.
+- **Boss.** Bạo Quân Hoàng Kim (the Golden Tyrant), a 1.6x knight in part-built gold armor with a
+  crimson cape, a floating blade halo and a longsword. A pure planner (`Logic/BossPlan`) picks each
+  action: a sword cut, a 3-weapon portal volley, the armory (10 portals, 16 in phase 2, each impact
+  with a line telegraph), chains that root everyone in a ring before a lunging cut, and in phase 2
+  (below 50% HP, 1.25x speed) a 2.5 s charged spiral beam down a 70-stud cone that pillars block. A
+  soulslike health bar at the bottom centre shows the name, a damage-lag layer and the 50% phase
+  tick. The altar cools down for 60 s after a kill.
 - **Persistence.** DataStore `AstralArmory_v1` saves level, XP, passives and gems on leave and every
   60 s. Without DataStore access (an unpublished place) the session runs in memory.
 - **VFX.** One module per skill, pooled parts, every effect cleaned up within its duration + 1 s, at
@@ -61,16 +66,17 @@ PC and the camera center on touch.
                          ReplicatedStorage.Shared
    Config/  pure data: Skills, Gems, Passives, Progression, Enemies, Strings, AssetIds
    Logic/   pure Luau, no Roblox API, tested in Lune:
-            Progression, PassiveTree, GemRules, Stats, SkillResolver, Damage, BladeLayout
-   Models/  SwordModel, LanceModel (part-built)      Net.luau (remote names)   VfxPalette
+            Progression, PassiveTree, GemRules, Stats, SkillResolver, Damage, BladeLayout,
+            BossPlan, PoseClip
+   Models/  SwordModel, LanceModel, TyrantArmor (part-built)   Net.luau (remote names)   VfxPalette
 
   Client (StarterPlayerScripts.Client)          Server (ServerScriptService.Server)
   ┌──────────────────────────────┐              ┌───────────────────────────────────┐
   │ Input  keys, touch, aim      │── intents ──▶│ PlayerData  profile, DataStore     │
   │ UI     HUD, tree, gems,      │              │ Combat      validation, resolver,  │
-  │        damage numbers        │◀─ StateSync ─│             hits, elements, absorb │
+  │        boss bar, damage nums │◀─ StateSync ─│             hits, elements, absorb │
   │ Vfx    one module per skill, │◀─ SkillFx ───│ Enemies     spawn rings, AI, XP    │
-  │        boss telegraphs       │◀─ BossFx ────│ Boss        altar, phases, rewards │
+  │        Boss/ effects, poses  │◀─ BossFx ────│ Boss        planner, actions, root │
   └──────────────────────────────┘◀ DamagePopup─└───────────────────────────────────┘
 ```
 
@@ -107,7 +113,6 @@ selene src
 | ![Crimson lance](docs/screenshots/04-skill-r-crimson-lance.png) | ![Hex aegis](docs/screenshots/05-skill-f-hex-aegis.png) |
 | ![Ascension](docs/screenshots/06-skill-t-ascension.png) | ![Passive tree](docs/screenshots/08-passive-tree.png) |
 | ![Frost gem socketed](docs/screenshots/09-gem-socket-frost.png) | ![Frost blade rain](docs/screenshots/10-frost-blade-rain.png) |
-| ![Boss slam telegraph](docs/screenshots/12-boss-phase1-slam.png) | ![Boss enraged](docs/screenshots/13-boss-phase2-enrage.png) |
 | ![Phone HUD with touch buttons](docs/screenshots/15-phone-hud-touch.png) | ![Passive tree on a phone](docs/screenshots/16-phone-passive-tree.png) |
 
 ## Docs
