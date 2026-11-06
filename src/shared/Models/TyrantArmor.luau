@@ -677,7 +677,8 @@ local function sword(b: Builder, rightHand: BasePart)
 		Enum.Material.Neon
 	)
 
-	for name, y in { TrailTop = tipY - 0.15, TrailBottom = bottom + 0.2 } do
+	local trailPoints: { [string]: number } = { TrailTop = tipY - 0.15, TrailBottom = bottom + 0.2 }
+	for name, y in trailPoints do
 		local a = Instance.new("Attachment")
 		a.Name = name
 		a.CFrame = core.CFrame:ToObjectSpace(gripWorld * CFrame.new(0, y * k, 0))
