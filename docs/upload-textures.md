@@ -3,8 +3,11 @@
 Every effect runs without custom textures (built-in fallbacks). Uploading them makes the rune rings,
 hex shield, slash arcs, beams, explosions and the transformation aura look the way they were designed.
 
-Roblox gives a texture its `rbxassetid://` only after it is uploaded under your account, and there is
-no way to do that headless without an Open Cloud API key, so this step is manual (about 3 minutes).
+**Done for v1.2**: the ids are in `src/shared/Config/AssetIds.luau` and `assets/textures/asset_ids.json`.
+
+To re-upload with an Open Cloud API key (permission `assets`: Read + Write), save the key to
+`%USERPROFILE%\.roblox_api_key` and run `python tools/upload_textures.py <yourUserId>`.
+Without a key, use the manual route below (about 3 minutes).
 
 1. In Roblox Studio, open **Window → Asset Manager**, then **Bulk Import**.
 2. Select every PNG in `assets/textures/` except `ring_runes.png` (the hero version replaces it).

@@ -24,18 +24,19 @@ local SPARKLES = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local FIRE = "rbxasset://textures/particles/fire_main.dds"
 
--- Filled after upload. Leave a texture out (nil) to keep its fallback.
+-- Uploaded with tools/upload_textures.py (ids also in assets/textures/asset_ids.json).
+-- Leave a texture out (nil) to keep its fallback.
 local CUSTOM: { [string]: string } = {
-	-- glow_soft = "rbxassetid://",
-	-- glow_star = "rbxassetid://",
-	-- spark = "rbxassetid://",
-	-- smoke_soft = "rbxassetid://",
-	-- ring_runes = "rbxassetid://", -- prefer assets/textures/hero_ring_runes.png
-	-- hex_cell = "rbxassetid://",
-	-- slash_arc = "rbxassetid://",
-	-- beam_core = "rbxassetid://",
-	-- explosion_flipbook_4x4 = "rbxassetid://",
-	-- aura_flame = "rbxassetid://", -- assets/textures/hero_aura_flame.png
+	glow_soft = "rbxassetid://113246916976596",
+	glow_star = "rbxassetid://79995011718568",
+	spark = "rbxassetid://122894767985137",
+	smoke_soft = "rbxassetid://110332962154087",
+	ring_runes = "rbxassetid://81732763898173",
+	hex_cell = "rbxassetid://87059961153840",
+	slash_arc = "rbxassetid://108978051894085",
+	beam_core = "rbxassetid://78693715905516",
+	explosion_flipbook_4x4 = "rbxassetid://105749511901802",
+	aura_flame = "rbxassetid://81484018039428",
 }
 
 -- Built-in fallbacks. An empty string means "no texture": Beams render as a
