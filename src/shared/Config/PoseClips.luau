@@ -450,10 +450,12 @@ local IDLE: PoseTable = {
 	RightShoulder = { 10, 0, 12 },
 	RightElbow = { 14, 0, 0 },
 	RightWrist = { -30, 0, 0 },
-	-- Left hand on the hip: upper arm out and back, forearm folded in to the hip.
-	LeftShoulder = { -12, 0, -48 },
-	LeftElbow = { 0, 0, 100 },
-	LeftWrist = { 0, 0, 20 },
+	-- Left hand on the hip: upper arm swung back and out, elbow flexed, so the gauntlet
+	-- rests on the side of the waist with the elbow out. Solved with forward kinematics
+	-- on the boss rig in Studio (an elbow Z bend folds the hand up to the ribs instead).
+	LeftShoulder = { -72, -40, -35 },
+	LeftElbow = { 80, 0, 0 },
+	LeftWrist = { 0, 0, 0 },
 	-- Chest out, chin up.
 	Waist = { 5, 0, 0 },
 	Neck = { 8, 0, 0 },
