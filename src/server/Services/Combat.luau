@@ -253,11 +253,16 @@ local function applyElement(attacker: Player, model: Model, dealt: number, eleme
 		target.slowUntil = os.clock() + (frostGem.slowDuration or 2)
 	elseif element == "flame" then
 		local duration = flameGem.burnDuration or 3
-		local tick = dealt * (flameGem.burnPct or 0.2) / BURN_TICKS
+		-- Split the whole-number total over the ticks, so a small hit does not burn for
+		-- 1 per tick (damageEnemy rounds every amount up to at least 1).
+		local total = math.floor(dealt * (flameGem.burnPct or 0.2) + 0.5)
 		for i = 1, BURN_TICKS do
-			task.delay(duration * i / BURN_TICKS, function()
-				Combat.damageEnemy(model, tick, false, "flame", attacker)
-			end)
+			local tick = math.floor(total * i / BURN_TICKS) - math.floor(total * (i - 1) / BURN_TICKS)
+			if tick > 0 then
+				task.delay(duration * i / BURN_TICKS, function()
+					Combat.damageEnemy(model, tick, false, "flame", attacker)
+				end)
+			end
 		end
 	elseif element == "storm" then
 		local origin = model:GetPivot().Position
