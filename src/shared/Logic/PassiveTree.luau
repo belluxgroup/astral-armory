@@ -4,6 +4,9 @@ local Passives = if script
 	then require(script.Parent.Parent.Config.Passives)
 	else require("../Config/Passives")
 
+-- Type alias through typeof: the dual require is an if-expression, which hides exported types.
+type Node = typeof(Passives.nodes.start)
+
 export type Allocated = { [string]: true }
 export type Reason = "unknown" | "allocated" | "no_points" | "not_linked"
 
@@ -14,7 +17,7 @@ local REGIONS = { "might", "swift", "insight" }
 
 -- Checks the tree data: link targets exist, links are symmetric, every node is
 -- reachable from the start node, exactly 40 nodes, one keystone per region.
-function PassiveTree.validateGraph(nodes: { [string]: Passives.Node }): (boolean, { string })
+function PassiveTree.validateGraph(nodes: { [string]: Node }): (boolean, { string })
 	local errors: { string } = {}
 	local startId = Passives.startId
 

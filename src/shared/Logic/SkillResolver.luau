@@ -6,6 +6,9 @@ local Skills = if script then require(script.Parent.Parent.Config.Skills) else r
 local Gems = if script then require(script.Parent.Parent.Config.Gems) else require("../Config/Gems")
 local Stats = if script then require(script.Parent.Stats) else require("./Stats")
 
+-- Type alias through typeof: the dual require is an if-expression, which hides exported types.
+type Stats = typeof(Stats.compute(1, {}, { transformed = false }))
+
 export type Element = "none" | "frost" | "flame" | "storm"
 
 export type SkillSpec = {
@@ -40,7 +43,7 @@ SkillResolver.RADIANT_MIND_DRAIN = 6
 function SkillResolver.resolve(
 	skillId: string,
 	socketedGemIds: { string },
-	stats: Stats.Stats,
+	stats: Stats,
 	transformed: boolean
 ): SkillSpec
 	local skill = if skillId ~= "order" then Skills[skillId] else nil

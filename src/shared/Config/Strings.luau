@@ -24,6 +24,10 @@ local Strings: { [string]: string } = {
 	unsocketHint = "Chuột phải hoặc giữ để tháo ngọc",
 	selectGemHint = "Chọn một viên ngọc, rồi chọn ô khảm",
 	allocateHint = "Bấm để học thiên phú",
+	treeHint = "Kéo để di chuyển, cuộn hoặc chụm hai ngón để thu phóng",
+	tapAgain = "Chạm lần nữa để học",
+	learned = "Đã học",
+	noGems = "Chưa có ngọc. Hạ quái để nhận thêm",
 
 	-- boss
 	summonBoss = "Triệu hồi Boss",

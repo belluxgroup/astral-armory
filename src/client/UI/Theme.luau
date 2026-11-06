@@ -194,17 +194,9 @@ function Theme.autoScale(object: GuiObject, designWidth: number?, designHeight: 
 	return scale
 end
 
--- Text comes from Config.Strings. The few UI-only hints it does not carry fall back to the Vietnamese
--- below, so the UI never shows a raw key.
-local FALLBACK: { [string]: string } = {
-	noGems = "Chưa có ngọc. Hạ quái để nhận thêm",
-	treeHint = "Kéo để di chuyển, cuộn hoặc chụm hai ngón để thu phóng",
-	tapAgain = "Chạm lần nữa để học",
-	learned = "Đã học",
-}
-
+-- All text comes from Config.Strings; a missing key shows as the key itself, so it is easy to spot.
 function Theme.text(key: string): string
-	return Strings[key] or FALLBACK[key] or key
+	return Strings[key] or key
 end
 
 -- Strings labels carry no numbers; the number goes after the label ("Cấp 5").

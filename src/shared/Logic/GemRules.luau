@@ -3,18 +3,22 @@
 local Skills = if script then require(script.Parent.Parent.Config.Skills) else require("../Config/Skills")
 local Gems = if script then require(script.Parent.Parent.Config.Gems) else require("../Config/Gems")
 
+-- Type aliases through typeof: the dual require is an if-expression, which hides exported types.
+type Skill = typeof(Skills.basic)
+type Gem = typeof(Gems.frost)
+
 export type Reason = "no_sockets" | "bad_slot" | "tag" | "element" | "duplicate"
 
 local GemRules = {}
 
-local function skillOf(skillId: string): Skills.Skill?
+local function skillOf(skillId: string): Skill?
 	if skillId == "order" then
 		return nil
 	end
 	return Skills[skillId]
 end
 
-local function gemOf(gemId: string): Gems.Gem?
+local function gemOf(gemId: string): Gem?
 	if gemId == "order" then
 		return nil
 	end
@@ -26,7 +30,7 @@ function GemRules.isAttack(skillId: string): boolean
 	return skill ~= nil and skill.damage ~= nil
 end
 
-local function fits(skill: Skills.Skill, gem: Gems.Gem): boolean
+local function fits(skill: Skill, gem: Gem): boolean
 	local tags = skill.tags
 	if gem.fits == "Projectile" then
 		return tags.Projectile == true

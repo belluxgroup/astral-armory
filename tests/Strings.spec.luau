@@ -30,6 +30,27 @@ return function(t)
 			t.ok(has(key), key)
 		end
 	end)
+	t.test("ui screen keys exist", function()
+		for _, key in
+			{
+				"pointsLeft",
+				"close",
+				"inventory",
+				"selectGemHint",
+				"unsocketHint",
+				"noGems",
+				"treeHint",
+				"tapAgain",
+				"learned",
+				"bossNeedLevel",
+			}
+		do
+			t.ok(has(key), key)
+		end
+		for _, kind in { "start", "small", "notable", "keystone" } do
+			t.ok(has("kind_" .. kind), "kind_" .. kind)
+		end
+	end)
 	t.test("every reason has text", function()
 		for _, r in { "no_sockets", "bad_slot", "tag", "element", "duplicate" } do
 			t.ok(has("reason_" .. r), "reason_" .. r)
