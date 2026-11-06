@@ -24,6 +24,9 @@ export type HollowKnight = {
 	eyeColor: RGB,
 }
 
+-- The Golden Tyrant (boss rework spec §2). The id stays `eclipse_warden` so keys and saves
+-- do not change. Times are seconds, distances studs, angles degrees. Two-entry lists are
+-- { phase 1, phase 2 }.
 export type EclipseWarden = {
 	id: string,
 	displayName: string,
@@ -37,13 +40,51 @@ export type EclipseWarden = {
 	scale: number,
 	speed: number,
 	aggroRange: number,
+	stopDistance: number,
 	bodyColor: RGB,
-	eyeColor: RGB,
-	enrageEyeColor: RGB,
-	slam: { interval: number, telegraph: number, radius: number, damage: number },
-	blades: { count: number, telegraph: number, radius: number, damage: number, scatter: number },
+	cadence: { number },
 	phase2At: number,
 	enrageSpeedMul: number,
+	enragePause: number,
+	melee: { range: number, windup: number, length: number, width: number, height: number, damage: number },
+	volley: {
+		count: number,
+		aimDelay: number,
+		delay: number,
+		interval: number,
+		radius: number,
+		damage: number,
+		jitter: number,
+	},
+	armory: {
+		cooldown: { number },
+		count: { number },
+		delay: number,
+		interval: number,
+		telegraph: number,
+		radius: number,
+		damage: number,
+		scatter: number,
+		fanRadius: number,
+		fanArc: number,
+	},
+	chains: {
+		cooldown: number,
+		range: number,
+		telegraph: number,
+		radius: number,
+		duration: number,
+		damage: number,
+		lungeWindup: number,
+	},
+	ultimate: {
+		cooldown: number,
+		firstDelay: number,
+		charge: number,
+		length: number,
+		angle: number,
+		damage: number,
+	},
 }
 
 local hollowKnight: HollowKnight = {
@@ -76,7 +117,7 @@ local hollowKnight: HollowKnight = {
 
 local eclipseWarden: EclipseWarden = {
 	id = "eclipse_warden",
-	displayName = "Hộ Vệ Nhật Thực",
+	displayName = "Bạo Quân Hoàng Kim",
 	level = 12,
 	hp = function(_level: number): number
 		return 4000
@@ -88,16 +129,54 @@ local eclipseWarden: EclipseWarden = {
 	summonLevel = 8,
 	summonRange = 20, -- studs from the altar, for the remote and the HUD button
 	altarCooldown = 60,
-	scale = 3,
+	scale = 1.6,
 	speed = 12,
 	aggroRange = 150,
-	bodyColor = { 18, 14, 24 },
-	eyeColor = { 255, 70, 60 },
-	enrageEyeColor = { 190, 90, 255 },
-	slam = { interval = 5, telegraph = 1.2, radius = 16, damage = 35 },
-	blades = { count = 8, telegraph = 1, radius = 5, damage = 25, scatter = 12 },
+	stopDistance = 6, -- stops walking this close to the target
+	bodyColor = { 26, 20, 32 }, -- obsidian undersuit #1A1420
+	cadence = { 1.6, 1.2 }, -- seconds between action starts
 	phase2At = 0.5,
 	enrageSpeedMul = 1.25,
+	enragePause = 1, -- the roar holds the boss in place
+	-- a cut in a box in front of the boss
+	melee = { range = 9, windup = 0.35, length = 10, width = 6, height = 8, damage = 20 },
+	-- 3 portals behind the boss; aim locks aimDelay after the snap, weapon i lands at
+	-- delay + (i - 1) * interval after the volley event
+	volley = {
+		count = 3,
+		aimDelay = 0.6,
+		delay = 0.5,
+		interval = 0.12,
+		radius = 3,
+		damage = 12,
+		jitter = 1.5,
+	},
+	-- a fan of portals; weapon i lands at delay + (i - 1) * interval, its line telegraph
+	-- shows for `telegraph` before that
+	armory = {
+		cooldown = { 14, 10 },
+		count = { 10, 16 },
+		delay = 0.7,
+		interval = 0.12,
+		telegraph = 0.5,
+		radius = 4,
+		damage = 18,
+		scatter = 5,
+		fanRadius = 9,
+		fanArc = 160,
+	},
+	-- a ring at the target's feet, then a root, then a lunging cut at the rooted player
+	chains = {
+		cooldown = 12,
+		range = 40,
+		telegraph = 1,
+		radius = 6,
+		duration = 1.5,
+		damage = 10,
+		lungeWindup = 0.15,
+	},
+	-- phase 2 only; `angle` is the cone half-angle
+	ultimate = { cooldown = 22, firstDelay = 4, charge = 2.5, length = 70, angle = 22, damage = 70 },
 }
 
 return {
