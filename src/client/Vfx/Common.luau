@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AssetIds = require(Shared:WaitForChild("Config"):WaitForChild("AssetIds"))
 local Net = require(Shared:WaitForChild("Net"))
+local SwordModel = require(Shared:WaitForChild("Models"):WaitForChild("SwordModel"))
 local VfxPalette = require(Shared:WaitForChild("VfxPalette"))
 
 export type FxEvent = Net.FxEvent
@@ -106,6 +107,54 @@ function Common.swordOf(character: Model?): Model?
 	end
 	local sword = character:FindFirstChild("AstralSword", true)
 	return if sword and sword:IsA("Model") then sword else nil
+end
+
+-- Neon parts of a sword (edges, fuller, gem), the ones effects recolor. The
+-- first time a part is seen its forged color is kept in the "VfxBase"
+-- attribute so effects can always restore it.
+function Common.swordNeon(sword: Model?): { BasePart }
+	local list: { BasePart } = {}
+	if sword then
+		for _, d in sword:GetDescendants() do
+			if d:IsA("BasePart") and d.Material == Enum.Material.Neon then
+				if d:GetAttribute("VfxBase") == nil then
+					d:SetAttribute("VfxBase", d.Color)
+				end
+				table.insert(list, d)
+			end
+		end
+	end
+	return list
+end
+
+Common.SWORD_RADIANT = Color3.fromRGB(255, 252, 240)
+
+-- The resting color of one of a sword's Neon parts: white while Ascension is
+-- active (the sword's "VfxRadiant" attribute), otherwise its forged color.
+function Common.swordRestColor(sword: Model?, part: BasePart): Color3
+	if sword and sword:GetAttribute("VfxRadiant") == true then
+		return Common.SWORD_RADIANT
+	end
+	local base = part:GetAttribute("VfxBase")
+	return if typeof(base) == "Color3" then base else SwordModel.EDGE_COLOR
+end
+
+-- Flat aim direction from an event, matching the server: origin -> target on
+-- the XZ plane, else the caster's facing, else -Z.
+function Common.aimDirection(origin: Vector3, target: Vector3, casterUserId: number?): Vector3
+	local d = Vector3.new(target.X - origin.X, 0, target.Z - origin.Z)
+	if d.Magnitude >= 1e-3 then
+		return d.Unit
+	end
+	local root = if casterUserId then Common.rootOf(Common.characterOf(casterUserId)) else nil
+	if root then
+		local look = root.CFrame.LookVector
+		local flat = Vector3.new(look.X, 0, look.Z)
+		if flat.Magnitude >= 1e-3 then
+			return flat.Unit
+		end
+	end
+	return Vector3.new(0, 0, -1)
 end
 
 function Common.isLocalCaster(userId: number?): boolean
@@ -689,7 +738,7 @@ end
 local KAPPA = 0.5523
 
 type Line = { a0: Attachment, a1: Attachment, beam: Beam, p0: Vector3, p1: Vector3 }
-type Arc = { radius: number, attachments: { Attachment }, beams: { Beam } }
+type RingArc = { radius: number, attachments: { Attachment }, beams: { Beam } }
 
 export type SigilOpts = {
 	rings: { number }?, -- ring radii as fractions of the sigil radius (default { 1 })
@@ -723,7 +772,7 @@ function Common.sigil(fx: Effect, cf: CFrame, radius: number, opts: SigilOpts?):
 	local lineWidth = o.lineWidth or ringWidth * 0.6
 	local part = fx:part({ CFrame = cf, Size = Vector3.new(radius * 2, 0.05, radius * 2) })
 
-	local arcs: { Arc } = {}
+	local arcs: { RingArc } = {}
 	local lines: { Line } = {}
 	local allBeams: { Beam } = {}
 	local beamWidths: { [Beam]: number } = {}
@@ -869,6 +918,95 @@ function Common.sigil(fx: Effect, cf: CFrame, radius: number, opts: SigilOpts?):
 
 	local typed = (sigil :: any) :: Sigil
 	typed:setScale(1)
+	return typed
+end
+
+---------------------------------------------------------------- arcs
+
+export type ArcOpts = {
+	segments: number?, -- beams along the arc (default 4)
+	width: number?, -- widest point in studs (default 1)
+	taper: number?, -- crescent sharpness: width * sin(pi t) ^ taper (default 0.7)
+	color: ColorSequence?,
+	transparency: number?,
+	brightness: number?,
+	texture: string?, -- AssetIds texture name; "" for a solid ribbon
+	faceCamera: boolean?,
+}
+
+export type Arc = {
+	beams: { Beam },
+	-- Re-lays the arc in `frame`'s XY plane from angle a0 to a1 (radians).
+	set: (self: Arc, frame: CFrame, radius: number, a0: number, a1: number) -> (),
+	setTransparency: (self: Arc, t: number) -> (),
+	setWidth: (self: Arc, scale: number) -> (),
+}
+
+-- A crescent drawn with Beams along a circular arc, tapered at both ends.
+-- The arc lies in `frame`'s XY plane (angle 0 = +X, pi/2 = +Y).
+function Common.arc(fx: Effect, frame: CFrame, radius: number, a0: number, a1: number, opts: ArcOpts?): Arc
+	local o: ArcOpts = opts or {}
+	local n = o.segments or 4
+	local maxWidth = o.width or 1
+	local taper = o.taper or 0.7
+	local atts: { Attachment } = {}
+	for i = 0, n do
+		atts[i + 1] = fx:attachment(nil, frame)
+	end
+	local beams: { Beam } = {}
+	local widths: { number } = {}
+	for i = 0, n do
+		widths[i + 1] = maxWidth * math.sin(math.pi * i / n) ^ taper
+	end
+	local texture = o.texture
+	for i = 1, n do
+		local b = fx:beam(atts[i], atts[i + 1], {
+			Color = o.color or ColorSequence.new(Color3.new(1, 1, 1)),
+			Transparency = NumberSequence.new(o.transparency or 0),
+			Brightness = o.brightness or 2,
+			FaceCamera = if o.faceCamera == nil then true else o.faceCamera,
+			Segments = 8,
+			Width0 = widths[i],
+			Width1 = widths[i + 1],
+		})
+		if texture == "" then
+			b.Texture = ""
+		elseif texture ~= nil then
+			b.Texture = AssetIds.tex(texture :: any)
+		end
+		beams[i] = b
+	end
+	local arc = { beams = beams }
+	function arc.set(_self: Arc, f: CFrame, r: number, from: number, to: number)
+		local step = (to - from) / n
+		local handle = 4 / 3 * math.tan(math.abs(step) / 4) * r
+		local sign = if step >= 0 then 1 else -1
+		for i = 0, n do
+			local th = from + step * i
+			local pos = Vector3.new(math.cos(th) * r, math.sin(th) * r, 0)
+			local tangent = Vector3.new(-math.sin(th), math.cos(th), 0) * sign
+			local normal = -tangent:Cross(Vector3.zAxis)
+			atts[i + 1].WorldCFrame = f * CFrame.fromMatrix(pos, tangent, normal)
+		end
+		for _, b in beams do
+			b.CurveSize0 = handle
+			b.CurveSize1 = handle
+		end
+	end
+	function arc.setTransparency(_self: Arc, t: number)
+		local ns = NumberSequence.new(math.clamp(t, 0, 1))
+		for _, b in beams do
+			b.Transparency = ns
+		end
+	end
+	function arc.setWidth(_self: Arc, scale: number)
+		for i, b in beams do
+			b.Width0 = widths[i] * scale
+			b.Width1 = widths[i + 1] * scale
+		end
+	end
+	local typed = (arc :: any) :: Arc
+	typed:set(frame, radius, a0, a1)
 	return typed
 end
 

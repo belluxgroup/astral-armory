@@ -15,6 +15,7 @@ local Vfx = {}
 
 local handlers: { [string]: Handler } = {
 	blade_rain = require(script.BladeRain),
+	dawnbreaker = require(script.Dawnbreaker),
 }
 
 local started = false
