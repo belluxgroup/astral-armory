@@ -378,6 +378,439 @@ local clips: { [string]: Clip } = {
 	},
 }
 
+---------------------------------------------------------------- Golden Tyrant (boss)
+-- Played on the boss rig from BossFx `pose` events (spec §4). The boss holds its longsword
+-- in the right hand with the same grip as the player sword, so RightWrist X -80 lines the
+-- blade up with the arm here too. Timings match the BossFx payload delays noted per clip.
+
+type PoseTable = { [string]: { number } }
+
+-- The raised-blade pose of the ultimate, shared by the end of the charge and the start of the fire.
+local OVERHEAD: PoseTable = {
+	RightShoulder = { 170, 0, -6 },
+	RightElbow = { 12, 0, 0 },
+	RightWrist = { -80, 0, 0 },
+	LeftShoulder = { 25, 0, -55 },
+	LeftElbow = { 20, 0, 0 },
+	Waist = { 12, 0, 0 },
+	Neck = { 18, 0, 0 },
+}
+
+-- `base` with a small offset on a few joints (a tremble or a breath).
+local function nudge(base: PoseTable, offsets: PoseTable): PoseTable
+	local out: PoseTable = {}
+	for joint, e in base do
+		local o = offsets[joint]
+		out[joint] = if o then { e[1] + o[1], e[2] + o[2], e[3] + o[3] } else { e[1], e[2], e[3] }
+	end
+	return out
+end
+
+-- The 2.5 s held charge: the blade trembles harder as the charge builds.
+local function chargeKeys(): { PoseClip.Key }
+	local keys: { PoseClip.Key } = {
+		{ t = 0, pose = {}, ease = "out" },
+		{ t = 0.3, pose = OVERHEAD, ease = "inout" },
+	}
+	local step = 0.08
+	local n = 0
+	local t = 0.3 + step
+	while t < 2.6 do
+		n += 1
+		local amp = 0.6 + 2.4 * (t - 0.3) / 2.3
+		local sign = if n % 2 == 0 then 1 else -1
+		table.insert(keys, {
+			t = t,
+			pose = nudge(OVERHEAD, {
+				RightShoulder = { amp * sign, 0, amp * 0.5 * -sign },
+				RightWrist = { amp * 0.6 * -sign, 0, 0 },
+				Waist = { amp * 0.25 * sign, 0, 0 },
+				Neck = { amp * 0.3 * -sign, 0, 0 },
+			}),
+			ease = "inout",
+		})
+		t += step
+	end
+	table.insert(keys, { t = 2.7, pose = OVERHEAD })
+	return keys
+end
+
+local IDLE: PoseTable = {
+	-- Sword arm low and loose, the blade angled down and forward beside the right leg.
+	RightShoulder = { 10, 0, 12 },
+	RightElbow = { 14, 0, 0 },
+	RightWrist = { -30, 0, 0 },
+	-- Left hand on the hip: upper arm out and back, forearm folded in to the hip.
+	LeftShoulder = { -12, 0, -48 },
+	LeftElbow = { 0, 0, 100 },
+	LeftWrist = { 0, 0, 20 },
+	-- Chest out, chin up.
+	Waist = { 5, 0, 0 },
+	Neck = { 8, 0, 0 },
+}
+
+-- Regal stance with a slow breath: chest rises, chin settles, the shoulders lift a touch.
+clips.boss_idle = {
+	duration = 4,
+	blendIn = 0.5,
+	blendOut = 0,
+	loop = true,
+	keys = {
+		{ t = 0, pose = IDLE, ease = "inout" },
+		{
+			t = 2,
+			pose = nudge(IDLE, {
+				Waist = { 3, 0, 0 },
+				Neck = { -2.5, 0, 0 },
+				LeftShoulder = { 0, 0, -3 },
+				RightShoulder = { 2, 0, 2 },
+			}),
+			ease = "inout",
+		},
+		{ t = 4, pose = IDLE },
+	},
+}
+
+-- melee: a big diagonal cut, high right to low left. BossFx melee `delay` is the 0.35 s windup,
+-- so the blade crosses the strike zone from 0.35 to 0.46.
+clips.boss_melee = {
+	duration = 1.15,
+	blendIn = 0.08,
+	blendOut = 0.3,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.28,
+			pose = {
+				RightShoulder = { 150, -20, 62 },
+				RightElbow = { 45, 0, 0 },
+				RightWrist = { 0, 0, -25 },
+				LeftShoulder = { 45, 0, -35 },
+				Waist = { 8, -38, 0 },
+				Neck = { 6, 20, 0 },
+			},
+			ease = "in",
+		},
+		{
+			t = 0.35,
+			pose = {
+				RightShoulder = { 155, -22, 66 },
+				RightElbow = { 48, 0, 0 },
+				RightWrist = { 0, 0, -28 },
+				LeftShoulder = { 48, 0, -38 },
+				Waist = { 10, -42, 0 },
+				Neck = { 8, 22, 0 },
+			},
+			ease = "in",
+		},
+		{
+			t = 0.46,
+			pose = {
+				RightShoulder = { 58, 30, -58 },
+				RightElbow = { 8, 0, 0 },
+				RightWrist = { -80, -45, 0 },
+				LeftShoulder = { 20, 0, -55 },
+				Waist = { -16, 40, 0 },
+				Neck = { -10, -18, 0 },
+			},
+			ease = "out",
+		},
+		{
+			t = 0.72,
+			pose = {
+				RightShoulder = { 52, 30, -62 },
+				RightElbow = { 12, 0, 0 },
+				RightWrist = { -80, -45, 0 },
+				LeftShoulder = { 18, 0, -52 },
+				Waist = { -18, 42, 0 },
+				Neck = { -10, -18, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 1.15, pose = { RightShoulder = { 20, 0, 10 } } },
+	},
+}
+
+-- volley: the left hand rises and snaps (the portals open with the event); the sword arm stays easy.
+clips.boss_volley = {
+	duration = 1.0,
+	blendIn = 0.06,
+	blendOut = 0.3,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.12,
+			pose = {
+				LeftShoulder = { 120, 0, -28 },
+				LeftElbow = { 55, 0, 0 },
+				LeftWrist = { -25, 0, 0 },
+				RightShoulder = { 10, 0, 14 },
+				RightWrist = { -30, 0, 0 },
+				Waist = { 4, -12, 0 },
+				Neck = { 10, -8, 0 },
+			},
+			ease = "in",
+		},
+		{
+			t = 0.18,
+			pose = {
+				LeftShoulder = { 128, 0, -30 },
+				LeftElbow = { 50, 0, 0 },
+				LeftWrist = { 25, 0, 0 },
+				RightShoulder = { 10, 0, 14 },
+				RightWrist = { -30, 0, 0 },
+				Waist = { 6, -14, 0 },
+				Neck = { 12, -8, 0 },
+			},
+			ease = "inout",
+		},
+		{
+			t = 0.6,
+			pose = {
+				LeftShoulder = { 122, 0, -32 },
+				LeftElbow = { 52, 0, 0 },
+				LeftWrist = { 20, 0, 0 },
+				RightShoulder = { 10, 0, 14 },
+				RightWrist = { -30, 0, 0 },
+				Waist = { 5, -12, 0 },
+				Neck = { 10, -8, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 1.0, pose = {} },
+	},
+}
+
+-- armory: both arms swing wide and back, palms open, chest out, while the fan of portals opens
+-- and fires (10 to 16 shots, 0.12 s apart, after the opening delay).
+clips.boss_armory = {
+	duration = 2.8,
+	blendIn = 0.1,
+	blendOut = 0.4,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.12,
+			pose = {
+				RightShoulder = { 30, 0, 40 },
+				LeftShoulder = { 30, 0, -40 },
+				RightElbow = { 50, 0, 0 },
+				LeftElbow = { 50, 0, 0 },
+				Waist = { -10, 0, 0 },
+				Neck = { -6, 0, 0 },
+			},
+			ease = "out",
+		},
+		{
+			t = 0.32,
+			pose = {
+				RightShoulder = { -28, 0, 108 },
+				LeftShoulder = { -28, 0, -108 },
+				RightElbow = { 6, 0, 0 },
+				LeftElbow = { 6, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				LeftWrist = { 0, 0, -15 },
+				Waist = { 14, 0, 0 },
+				Neck = { 16, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{
+			t = 2.3,
+			pose = {
+				RightShoulder = { -24, 0, 104 },
+				LeftShoulder = { -24, 0, -104 },
+				RightElbow = { 8, 0, 0 },
+				LeftElbow = { 8, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				LeftWrist = { 0, 0, -15 },
+				Waist = { 12, 0, 0 },
+				Neck = { 14, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 2.8, pose = {} },
+	},
+}
+
+-- chains: the sword hand thrusts at the target while the ring fills (1.0 s), then the fist pulls
+-- back as the chains bind and the lunge follows.
+clips.boss_chains = {
+	duration = 1.6,
+	blendIn = 0.06,
+	blendOut = 0.3,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.15,
+			pose = {
+				RightShoulder = { 95, 12, -6 },
+				RightElbow = { 0, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				LeftShoulder = { -10, 0, -30 },
+				Waist = { -6, 25, 0 },
+				Neck = { 0, -15, 0 },
+			},
+			ease = "inout",
+		},
+		{
+			t = 0.95,
+			pose = {
+				RightShoulder = { 98, 12, -6 },
+				RightElbow = { 0, 0, 0 },
+				RightWrist = { -84, 0, 0 },
+				LeftShoulder = { -12, 0, -32 },
+				Waist = { -8, 26, 0 },
+				Neck = { 0, -15, 0 },
+			},
+			ease = "in",
+		},
+		{
+			t = 1.1,
+			pose = {
+				RightShoulder = { 45, -25, 30 },
+				RightElbow = { 105, 0, 0 },
+				RightWrist = { -40, 0, 0 },
+				LeftShoulder = { 30, 0, -25 },
+				Waist = { 6, -22, 0 },
+				Neck = { 4, 10, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 1.6, pose = {} },
+	},
+}
+
+-- ultimate_charge: the blade goes up overhead and is held for the 2.5 s charge, trembling.
+clips.boss_ultimate_charge = {
+	duration = 2.7,
+	blendIn = 0.1,
+	blendOut = 0.15,
+	keys = chargeKeys(),
+}
+
+-- ultimate_fire: from overhead, a two-handed thrust forward along the cone, held while the beam runs.
+clips.boss_ultimate_fire = {
+	duration = 1.6,
+	blendIn = 0.03,
+	blendOut = 0.4,
+	keys = {
+		{ t = 0, pose = OVERHEAD, ease = "in" },
+		{
+			t = 0.1,
+			pose = {
+				RightShoulder = { 92, 0, -20 },
+				LeftShoulder = { 92, 0, 20 },
+				RightElbow = { 4, 0, 0 },
+				LeftElbow = { 4, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				LeftWrist = { -40, 0, 0 },
+				Waist = { -18, 0, 0 },
+				Neck = { -4, 0, 0 },
+			},
+			ease = "out",
+		},
+		{
+			t = 1.1,
+			pose = {
+				RightShoulder = { 88, 0, -20 },
+				LeftShoulder = { 88, 0, 20 },
+				RightElbow = { 8, 0, 0 },
+				LeftElbow = { 8, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				LeftWrist = { -40, 0, 0 },
+				Waist = { -14, 0, 0 },
+				Neck = { -2, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 1.6, pose = {} },
+	},
+}
+
+-- enrage: a brief gather, then the head thrown back and the arms flung out.
+clips.boss_enrage = {
+	duration = 1.9,
+	blendIn = 0.06,
+	blendOut = 0.4,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.2,
+			pose = {
+				RightShoulder = { -10, 0, 25 },
+				LeftShoulder = { -10, 0, -25 },
+				RightElbow = { 70, 0, 0 },
+				LeftElbow = { 70, 0, 0 },
+				Waist = { -22, 0, 0 },
+				Neck = { -18, 0, 0 },
+			},
+			ease = "in",
+		},
+		{
+			t = 0.36,
+			pose = {
+				RightShoulder = { -22, 0, 112 },
+				LeftShoulder = { -22, 0, -112 },
+				RightElbow = { 0, 0, 0 },
+				LeftElbow = { 0, 0, 0 },
+				RightWrist = { -80, 0, 0 },
+				Waist = { 24, 0, 0 },
+				Neck = { 42, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{
+			t = 1.4,
+			pose = {
+				RightShoulder = { -18, 0, 108 },
+				LeftShoulder = { -18, 0, -108 },
+				RightWrist = { -80, 0, 0 },
+				Waist = { 20, 0, 0 },
+				Neck = { 36, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 1.9, pose = {} },
+	},
+}
+
+local KNEEL: PoseTable = {
+	RightShoulder = { 12, 0, 8 },
+	LeftShoulder = { 5, 0, -8 },
+	RightElbow = { 10, 0, 0 },
+	LeftElbow = { 6, 0, 0 },
+	RightWrist = { -55, 0, 0 },
+	Waist = { -42, 0, 0 },
+	Neck = { -28, 0, 0 },
+}
+
+-- defeated: a recoil, then the slump of a kneel (torso folds forward, head bows, arms hang, the
+-- sword point drops to the floor). It holds far longer than the corpse lives.
+clips.boss_defeated = {
+	duration = 8,
+	blendIn = 0.05,
+	blendOut = 0.3,
+	keys = {
+		{ t = 0, pose = {}, ease = "out" },
+		{
+			t = 0.18,
+			pose = {
+				RightShoulder = { 30, 0, 40 },
+				LeftShoulder = { 30, 0, -40 },
+				Waist = { 16, 0, 0 },
+				Neck = { 26, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{ t = 0.7, pose = KNEEL, ease = "inout" },
+		{ t = 8, pose = nudge(KNEEL, { Waist = { -2, 0, 0 }, Neck = { -2, 0, 0 } }) },
+	},
+}
+
+-- The looping stance the boss returns to after every one-shot clip.
+PoseClips.BOSS_IDLE = "boss_idle"
+
 PoseClips.clips = clips
 
 -- Which clip plays for an FxEvent, and whether the caster turns to face the aim first.

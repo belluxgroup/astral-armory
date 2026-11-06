@@ -13,6 +13,30 @@ local clip = {
 	},
 }
 
+local loopClip = {
+	duration = 2,
+	blendIn = 0.4,
+	blendOut = 0,
+	loop = true,
+	keys = {
+		{ t = 0, pose = { A = { 0, 0, 0 } }, ease = "inout" },
+		{ t = 1, pose = { A = { 10, 0, 0 } }, ease = "inout" },
+		{ t = 2, pose = { A = { 0, 0, 0 } } },
+	},
+}
+
+local BOSS_CLIPS = {
+	"boss_idle",
+	"boss_melee",
+	"boss_volley",
+	"boss_armory",
+	"boss_chains",
+	"boss_ultimate_charge",
+	"boss_ultimate_fire",
+	"boss_enrage",
+	"boss_defeated",
+}
+
 return function(t)
 	t.test("sample hits keys exactly and fills missing joints with 0", function()
 		local mid = PoseClip.sample(clip, 0.5)
@@ -64,5 +88,49 @@ return function(t)
 				t.ok(name and PoseClips.clips[name], id)
 			end
 		end
+	end)
+	t.test("a looping clip wraps its time", function()
+		t.near(PoseClip.sample(loopClip, 0.5).A[1], PoseClip.sample(loopClip, 2.5).A[1])
+		t.near(PoseClip.sample(loopClip, 1).A[1], 10)
+		t.near(PoseClip.sample(loopClip, 7).A[1], 10)
+		t.near(PoseClip.sample(loopClip, 4).A[1], 0)
+	end)
+	t.test("a looping clip holds weight 1 after blend-in and never ends", function()
+		t.eq(PoseClip.weight(loopClip, 0), 0)
+		t.near(PoseClip.weight(loopClip, 0.2), 0.5)
+		t.eq(PoseClip.weight(loopClip, 1.9), 1)
+		t.eq(PoseClip.weight(loopClip, 2), 1)
+		t.eq(PoseClip.weight(loopClip, 500), 1)
+		t.eq(PoseClip.done(loopClip, 500), false)
+	end)
+	t.test("a one-shot clip is done at its duration", function()
+		t.eq(PoseClip.done(clip, 0.99), false)
+		t.eq(PoseClip.done(clip, 1), true)
+	end)
+	t.test("a loop must close on its first pose", function()
+		local known = { A = true }
+		t.ok((PoseClip.validate(loopClip, known)))
+		local open = table.clone(loopClip)
+		open.keys = {
+			{ t = 0, pose = { A = { 0, 0, 0 } } },
+			{ t = 2, pose = { A = { 5, 0, 0 } } },
+		}
+		local ok, why = PoseClip.validate(open, known)
+		t.eq(ok, false)
+		t.eq(why, "loop does not close")
+		local short = table.clone(loopClip)
+		short.keys = {
+			{ t = 0, pose = { A = { 0, 0, 0 } } },
+			{ t = 1.5, pose = { A = { 0, 0, 0 } } },
+		}
+		t.eq(select(2, PoseClip.validate(short, known)), "loop does not close")
+	end)
+	t.test("every boss pose clip exists and only the idle loops", function()
+		for _, name in BOSS_CLIPS do
+			local c = PoseClips.clips[name]
+			t.ok(c, name)
+			t.eq(c.loop == true, name == "boss_idle", name)
+		end
+		t.ok(PoseClips.clips.boss_ultimate_charge.duration >= 2.5, "charge holds for the 2.5 s charge")
 	end)
 end

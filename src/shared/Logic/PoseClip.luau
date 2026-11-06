@@ -7,12 +7,14 @@
 -- joint ({x, y, z}); a joint missing from a key is at 0 there. `ease` on a key
 -- shapes the segment that STARTS at that key. The clip's weight fades in over
 -- `blendIn` and out over `blendOut`, so it blends with whatever the Animator plays.
+-- A `loop` clip wraps its time, holds weight 1 after its blend-in and never ends;
+-- its last key sits at `duration` and repeats the first pose, so the wrap is seamless.
 
 export type Euler = { number }
 export type Pose = { [string]: Euler }
 export type Ease = "linear" | "in" | "out" | "inout"
 export type Key = { t: number, pose: Pose, ease: Ease? }
-export type Clip = { duration: number, blendIn: number, blendOut: number, keys: { Key } }
+export type Clip = { duration: number, blendIn: number, blendOut: number, keys: { Key }, loop: boolean? }
 
 local PoseClip = {}
 
@@ -49,6 +51,9 @@ end
 -- The pose at time t (seconds), for every joint in the clip.
 function PoseClip.sample(clip: Clip, t: number): Pose
 	local keys = clip.keys
+	if clip.loop and clip.duration > 0 then
+		t = t % clip.duration
+	end
 	local out: Pose = {}
 	local joints = PoseClip.joints(clip)
 	local a, b, alpha = keys[1], keys[1], 0
@@ -76,13 +81,40 @@ function PoseClip.sample(clip: Clip, t: number): Pose
 end
 
 -- Blend weight at time t: 0 before start and after the end, 1 in the body.
+-- A looping clip has no end: after its blend-in it stays at 1.
 function PoseClip.weight(clip: Clip, t: number): number
-	if t <= 0 or t >= clip.duration then
+	if t <= 0 then
 		return 0
 	end
 	local inW = if clip.blendIn > 0 then t / clip.blendIn else 1
+	if clip.loop then
+		return math.clamp(inW, 0, 1)
+	end
+	if t >= clip.duration then
+		return 0
+	end
 	local outW = if clip.blendOut > 0 then (clip.duration - t) / clip.blendOut else 1
 	return math.clamp(math.min(inW, outW), 0, 1)
+end
+
+-- True once a one-shot clip has played out. A looping clip is never done.
+function PoseClip.done(clip: Clip, t: number): boolean
+	return not clip.loop and t >= clip.duration
+end
+
+local function samePose(a: Pose, b: Pose): boolean
+	for joint, e in a do
+		local f = b[joint] or ZERO
+		if e[1] ~= f[1] or e[2] ~= f[2] or e[3] ~= f[3] then
+			return false
+		end
+	end
+	for joint, f in b do
+		if a[joint] == nil and (f[1] ~= 0 or f[2] ~= 0 or f[3] ~= 0) then
+			return false
+		end
+	end
+	return true
 end
 
 -- Validation used by the tests: keys ordered and inside the clip, known joints only.
@@ -106,6 +138,12 @@ function PoseClip.validate(clip: Clip, knownJoints: { [string]: true }): (boolea
 			if #e ~= 3 then
 				return false, `key {i}: {joint} needs 3 angles`
 			end
+		end
+	end
+	if clip.loop then
+		local first, final = clip.keys[1], clip.keys[#clip.keys]
+		if first.t ~= 0 or final.t ~= clip.duration or not samePose(first.pose, final.pose) then
+			return false, "loop does not close"
 		end
 	end
 	if clip.blendIn + clip.blendOut > clip.duration then
