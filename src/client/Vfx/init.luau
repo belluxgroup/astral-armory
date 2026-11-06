@@ -13,7 +13,9 @@ type Handler = { play: (event: FxEvent) -> () }
 
 local Vfx = {}
 
-local handlers: { [string]: Handler } = {}
+local handlers: { [string]: Handler } = {
+	blade_rain = require(script.BladeRain),
+}
 
 local started = false
 

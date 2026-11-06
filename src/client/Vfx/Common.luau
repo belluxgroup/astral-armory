@@ -383,11 +383,8 @@ function Effect.emitter(
 		return nil
 	end
 	self.emitterCount += 1
-	local e = Common.emitter(parent, props, texture)
-	if not parent:IsDescendantOf(self.folder) then
-		self:own(e)
-	end
-	return e
+	-- Always owned: emitters on pooled or character parts must not outlive the effect.
+	return self:own(Common.emitter(parent, props, texture))
 end
 
 -- A Beam between two attachments, parented to the effect folder.
@@ -419,10 +416,7 @@ function Effect.light(self: Effect, parent: Instance, props: Props?): PointLight
 	l.Brightness = 2
 	Common.apply(l, props)
 	l.Parent = parent
-	if not parent:IsDescendantOf(self.folder) then
-		self:own(l)
-	end
-	return l
+	return self:own(l)
 end
 
 function Effect.trail(
@@ -444,10 +438,7 @@ function Effect.trail(
 	t.TextureMode = Enum.TextureMode.Stretch
 	Common.apply(t, props)
 	t.Parent = if a0.Parent then a0.Parent else self.folder
-	if not t:IsDescendantOf(self.folder) then
-		self:own(t)
-	end
-	return t
+	return self:own(t)
 end
 
 -- Borrows from a pool; the object is released back when the effect ends.
