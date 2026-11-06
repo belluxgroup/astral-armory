@@ -63,6 +63,9 @@ local BLADE_DROP_DELAY = 0.6
 local BLADE_FALL_TIME = 0.12
 local BLADE_HIT_RADIUS = 3
 local BLADE_HIT_LIFT = 1.5
+local GROUND_LIFT = 6
+local TARGET_GROUND_DROP = 60
+local BLADE_GROUND_DROP = 12
 local BEAM_HEIGHT = 12
 local LANCE_RADIUS = 1.5
 local LANCE_MAX_HITS_PER_STEP = 16
@@ -90,6 +93,8 @@ local remotes: Net.Remotes = {}
 local random = Random.new()
 local enemyFolder: Folder? = nil
 local overlap = OverlapParams.new()
+local groundParams = RaycastParams.new()
+groundParams.FilterType = Enum.RaycastFilterType.Include
 overlap.FilterType = Enum.RaycastFilterType.Include
 
 local function rng(): number
@@ -559,13 +564,43 @@ local function castBasic(live: Live, spec: SkillSpec, origin: Vector3, dir: Vect
 	end
 end
 
+-- Mirrors the client's Common.ground: drop a ray from just above `position` onto the
+-- Arena/Terrain so server hits land on the same floor the client draws on.
+local function groundHit(position: Vector3, maxDrop: number): Vector3?
+	local include: { Instance } = { Workspace.Terrain }
+	local arena = Workspace:FindFirstChild("Arena")
+	if arena then
+		table.insert(include, arena)
+	end
+	groundParams.FilterDescendantsInstances = include
+	local hit = Workspace:Raycast(
+		position + Vector3.new(0, GROUND_LIFT, 0),
+		Vector3.new(0, -(maxDrop + GROUND_LIFT), 0),
+		groundParams
+	)
+	return if hit then hit.Position else nil
+end
+
+-- Grounds a clamped aim point; with no floor under it, falls back to the caster's feet height.
+local function groundTarget(live: Live, target: Vector3): Vector3
+	local hit = groundHit(target, TARGET_GROUND_DROP)
+	if hit then
+		return hit
+	end
+	local root = live.root :: BasePart
+	local humanoid = live.humanoid :: Humanoid
+	local floorY = root.Position.Y - root.Size.Y / 2 - humanoid.HipHeight
+	return Vector3.new(target.X, floorY, target.Z)
+end
+
 local function castBladeRain(live: Live, spec: SkillSpec, target: Vector3, seed: number)
 	for _, point in BladeLayout.points(seed, spec.count, spec.radius) do
 		task.delay(BLADE_DROP_DELAY + point.delay + BLADE_FALL_TIME, function()
 			if live.player.Parent ~= Players then
 				return
 			end
-			local impact = target + Vector3.new(point.x, 0, point.z)
+			local flat = target + Vector3.new(point.x, 0, point.z)
+			local impact = groundHit(flat, BLADE_GROUND_DROP) or flat
 			for _, model in targetsInRadius(impact + Vector3.new(0, BLADE_HIT_LIFT, 0), BLADE_HIT_RADIUS) do
 				strike(live, model, spec.damage, spec.element, true)
 			end
@@ -706,6 +741,9 @@ local function onCast(player: Player, skillId: unknown, aim: unknown)
 	local origin = root.Position
 	local target = clampTarget(origin, aim :: Vector3, spec)
 	local dir = flatDirection(origin, if target == origin then aim :: Vector3 else target, root)
+	if id == "blade_rain" then
+		target = groundTarget(live, target)
+	end
 	local combo: number? = nil
 	if id == "basic" then
 		if now - live.lastBasicAt > COMBO_RESET then
