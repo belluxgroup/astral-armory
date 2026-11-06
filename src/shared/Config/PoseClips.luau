@@ -531,15 +531,16 @@ clips.boss_melee = {
 	},
 }
 
--- volley: the left hand rises and snaps (the portals open with the event); the sword arm stays easy.
+-- volley: the left hand rises and snaps as the portals open (the volley event comes 0.6 s
+-- after the pose), then holds while the three weapons land; the sword arm stays easy.
 clips.boss_volley = {
-	duration = 1.0,
-	blendIn = 0.06,
-	blendOut = 0.3,
+	duration = 1.5,
+	blendIn = 0.1,
+	blendOut = 0.35,
 	keys = {
 		{ t = 0, pose = {}, ease = "out" },
 		{
-			t = 0.12,
+			t = 0.42,
 			pose = {
 				LeftShoulder = { 120, 0, -28 },
 				LeftElbow = { 55, 0, 0 },
@@ -552,7 +553,7 @@ clips.boss_volley = {
 			ease = "in",
 		},
 		{
-			t = 0.18,
+			t = 0.58,
 			pose = {
 				LeftShoulder = { 128, 0, -30 },
 				LeftElbow = { 50, 0, 0 },
@@ -565,7 +566,7 @@ clips.boss_volley = {
 			ease = "inout",
 		},
 		{
-			t = 0.6,
+			t = 1.1,
 			pose = {
 				LeftShoulder = { 122, 0, -32 },
 				LeftElbow = { 52, 0, 0 },
@@ -577,7 +578,7 @@ clips.boss_volley = {
 			},
 			ease = "inout",
 		},
-		{ t = 1.0, pose = {} },
+		{ t = 1.5, pose = {} },
 	},
 }
 
@@ -810,6 +811,9 @@ clips.boss_defeated = {
 
 -- The looping stance the boss returns to after every one-shot clip.
 PoseClips.BOSS_IDLE = "boss_idle"
+-- When boss_melee's blade crosses the strike zone. A melee with a shorter windup (the chains
+-- lunge) starts the clip this much minus its windup in, so the cut still lands on time.
+PoseClips.BOSS_MELEE_HIT = 0.35
 
 PoseClips.clips = clips
 

@@ -119,8 +119,9 @@ local function step()
 end
 
 -- Plays a named clip on a character. A looping clip becomes its idle layer; any
--- other clip replaces the one-shot it was playing, on top of that idle.
-function Poses.play(character: Model, clipName: string)
+-- other clip replaces the one-shot it was playing, on top of that idle. `skip`
+-- starts the clip that many seconds in.
+function Poses.play(character: Model, clipName: string, skip: number?)
 	local clip = PoseClips.clips[clipName]
 	if not clip then
 		return
@@ -130,7 +131,7 @@ function Poses.play(character: Model, clipName: string)
 		layers = { joints = {} }
 		active[character] = layers
 	end
-	local run: Run = { clip = clip, started = os.clock() }
+	local run: Run = { clip = clip, started = os.clock() - math.max(skip or 0, 0) }
 	if clip.loop then
 		layers.idle = run
 	else
