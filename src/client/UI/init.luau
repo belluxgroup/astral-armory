@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 local Ascension = require(script.Parent:WaitForChild("Vfx"):WaitForChild("Ascension"))
 
+local BossBar = require(script.BossBar)
 local DamageNumbers = require(script.DamageNumbers)
 local GemsScreen = require(script.Gems)
 local Hud = require(script.Hud)
@@ -72,6 +73,7 @@ function UI.start(): Types.UIHandle
 		end,
 	})
 
+	BossBar.start(playerGui, remotes.BossFx)
 	local passives = PassiveTreeScreen.new(playerGui, actions)
 	local gems = GemsScreen.new(playerGui, actions)
 
