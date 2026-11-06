@@ -3,6 +3,7 @@ local C = require("../src/server/Rules/Cooldowns")
 local RL = require("../src/server/Rules/RateLimit")
 local P = require("../src/server/Rules/Profile")
 local Passives = require("../src/shared/Config/Passives")
+local Enemies = require("../src/shared/Config/Enemies")
 
 local function firstNeighbor(): string
 	return Passives.nodes[Passives.startId].links[1]
@@ -204,5 +205,20 @@ return function(t)
 		t.eq(#wire.blade_rain, 2)
 		t.eq(wire.dawnbreaker[1], false)
 		t.eq(wire.basic, nil)
+	end)
+	t.test("enemy formulas follow the spec", function()
+		local k = Enemies.hollow_knight
+		t.near(k.hp(1), 60)
+		t.near(k.hp(5), 120)
+		t.near(k.damage(1), 8)
+		t.near(k.damage(6), 16)
+		t.eq(k.xp(1), 20)
+		t.eq(k.xp(10), 316)
+		t.eq(k.innerCount + k.outerCount, 10)
+		local w = Enemies.eclipse_warden
+		t.eq(w.hp(w.level), 4000)
+		t.eq(w.xp(w.level), 2000)
+		t.eq(w.summonLevel, 8)
+		t.eq(w.gemDrops, 2)
 	end)
 end
