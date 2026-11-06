@@ -401,6 +401,11 @@ local function equipSword(character: Model)
 	if not hand or not hand:IsA("BasePart") or character:FindFirstChild("AstralSword") then
 		return
 	end
+	-- CharacterAdded fires before the character is parented to Workspace.
+	local deadline = os.clock() + EQUIP_TIMEOUT
+	while character.Parent == nil and os.clock() < deadline do
+		task.wait()
+	end
 	if character.Parent == nil then
 		return
 	end
