@@ -10,8 +10,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Enemies = require(Shared:WaitForChild("Config"):WaitForChild("Enemies"))
 local Skills = require(Shared:WaitForChild("Config"):WaitForChild("Skills"))
+local Strings = require(Shared:WaitForChild("Config"):WaitForChild("Strings"))
 
 local Types = require(script.Parent:WaitForChild("UI"):WaitForChild("Types"))
+local Dodge = require(script.Dodge)
 local Mobile = require(script.Mobile)
 
 type UIHandle = Types.UIHandle
@@ -115,6 +117,10 @@ function Input.start(ui: UIHandle)
 	local lastPress: { [string]: number } = {}
 
 	local function tryCast(skillId: string, fromTouch: boolean)
+		-- No skill during a dodge; the server refuses them too.
+		if Dodge.active() then
+			return
+		end
 		local skill = Skills[skillId]
 		local state = ui.getState()
 		if state then
@@ -179,6 +185,26 @@ function Input.start(ui: UIHandle)
 	bindMenu(Mobile.PASSIVES_ACTION, Enum.KeyCode.P, false, ui.togglePassives)
 	Mobile.extraButton(Mobile.PASSIVES_ACTION, "P", ui.togglePassives)
 	bindMenu(Mobile.GEMS_ACTION, Enum.KeyCode.G, true, ui.toggleGems)
+
+	-- Dodge: Left Shift (Shift Lock is off in the project, so Shift is free) or the touch
+	-- "Lăn" button. Stamina at 0 refuses it and blinks the stamina bar.
+	local function tryDodge()
+		local state = ui.getState()
+		if state and state.hp <= 0 then
+			return
+		end
+		if state and state.stamina <= 0 then
+			ui.flashStamina()
+			return
+		end
+		local dir = Dodge.try()
+		if dir then
+			remotes.Dodge:FireServer(dir)
+		end
+	end
+	bindMenu(Mobile.DODGE_ACTION, Enum.KeyCode.LeftShift, false, tryDodge)
+	Mobile.extraButton(Mobile.DODGE_ACTION, Strings.dodge, tryDodge)
+
 	-- The altar prompt also summons; B is the keyboard shortcut, touch uses the HUD button.
 	bindMenu("AstralSummonBoss", Enum.KeyCode.B, false, summonBoss)
 

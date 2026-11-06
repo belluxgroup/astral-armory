@@ -13,6 +13,7 @@ local Mobile = {}
 
 Mobile.PASSIVES_ACTION = "AstralPassives"
 Mobile.GEMS_ACTION = "AstralGems"
+Mobile.DODGE_ACTION = "AstralDodge"
 
 -- ContextActionService shows at most 7 touch buttons; actions past that get one of these instead.
 local extraButtons: { [string]: TextButton } = {}
@@ -71,7 +72,12 @@ type Placement = { action: string, ring: number, angle: number }
 -- Angles are screen-space degrees: 180 is left of the jump button, 270 is straight above it.
 -- P and G sit above the skill arc: lower left angles end up under the HUD hotbar on phones.
 local function placements(): { Placement }
-	local list: { Placement } = { { action = Mobile.skillAction("basic"), ring = 1, angle = 225 } }
+	-- The dodge sits just left of the jump button, under the thumb; 55 degrees from basic
+	-- keeps the two big buttons apart on the smallest phones.
+	local list: { Placement } = {
+		{ action = Mobile.skillAction("basic"), ring = 1, angle = 225 },
+		{ action = Mobile.DODGE_ACTION, ring = 1, angle = 170 },
+	}
 	local index = 0
 	for _, skillId: string in Skills.order do
 		if skillId ~= "basic" then

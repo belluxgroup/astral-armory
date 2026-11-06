@@ -1,7 +1,7 @@
 --!strict
 -- VFX controller (contract addendum item 7). `Vfx.start()` connects SkillFx,
--- dispatching each FxEvent to the module for its skill, and BossFx, which goes to the
--- Golden Tyrant effects in Vfx/Boss. Effects only render: every number they show comes
+-- dispatching each FxEvent to the module for its skill (a "dodge" event goes to
+-- Vfx/Dodge), and BossFx, which goes to the Golden Tyrant effects in Vfx/Boss. Effects only render: every number they show comes
 -- from the event's `spec` or the BossFx payload.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +10,7 @@ local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net")
 local Ascension = require(script.Ascension)
 local Boss = require(script.Boss)
 local Common = require(script.Common)
+local Dodge = require(script.Dodge)
 local Poses = require(script.Poses)
 
 type FxEvent = Common.FxEvent
@@ -31,8 +32,25 @@ local handlers: { [string]: Handler } = {
 
 local started = false
 
+-- Other players' dodges. The local caster already played its own from the prediction.
+local function dispatchDodge(event: Net.DodgeFx)
+	if Common.isLocalCaster(event.casterUserId) or Common.age(event.serverTime) > Common.MAX_EVENT_AGE then
+		return
+	end
+	task.spawn(function()
+		local ok, err = pcall(Dodge.play :: any, event)
+		if not ok then
+			warn(`[Vfx] dodge failed: {err}`)
+		end
+	end)
+end
+
 local function dispatch(event: FxEvent)
 	if type(event) ~= "table" or type(event.skillId) ~= "string" then
+		return
+	end
+	if event.skillId == "dodge" then
+		dispatchDodge((event :: any) :: Net.DodgeFx)
 		return
 	end
 	local handler = handlers[event.skillId]

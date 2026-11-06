@@ -14,6 +14,7 @@ local Strings: { [string]: string } = {
 	unlockAt = "Mở ở cấp",
 	levelUp = "Lên cấp!",
 	blocked = "Chặn",
+	dodge = "Lăn",
 
 	-- screens
 	passives = "Thiên Phú",

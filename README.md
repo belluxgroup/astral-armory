@@ -14,7 +14,8 @@ text is Vietnamese and lives in one file (`src/shared/Config/Strings.luau`).
 
 | Input | Action |
 |---|---|
-| M1 (click) | Chém: 3-hit sword combo, the third hit ×1.6 |
+| M1 (click) | Chém: 3-hit sword combo, the third hit ×1.6. Costs 8 stamina |
+| Left Shift | Lăn: roll 14 studs the way you move (22 stamina), or backstep when standing still (12 stamina), with i-frames. 0.8 s cooldown |
 | Q | Mưa Kiếm Tinh Tú: a ring of summoned blades rains on the target |
 | E | Cột Sáng Bình Minh: a 1.2 s channel, then a 40-stud light beam |
 | R | Giáo Huyết: a crimson lance that pierces everything in its lane |
@@ -25,15 +26,19 @@ text is Vietnamese and lives in one file (`src/shared/Config/Strings.luau`).
 | B | Summon the boss. Stand at the altar, level 8 or higher |
 | `/lvl N` | Studio only: set your level to N |
 
-On touch devices every skill, P, G and the boss summon have on-screen buttons. Aim follows the mouse on
+On touch devices every skill, the roll ("Lăn"), P, G and the boss summon have on-screen buttons. Aim follows the mouse on
 PC and the camera center on touch.
 
 ## Systems
 
-- **Server authority.** The client only sends intents (`CastSkill`, `AllocatePassive`, `SocketGem`,
+- **Server authority.** The client only sends intents (`CastSkill`, `Dodge`, `AllocatePassive`, `SocketGem`,
   `SummonBoss`). The server checks unlock, cooldown, cost, life and a 20-casts-per-second limit, clamps
   the target to the skill's range, deals the damage and broadcasts one `FxEvent` that every client
   renders.
+- **Stamina and dodge.** Stamina (100, 35/s after a 0.7 s pause) pays for rolls, backsteps and sword
+  hits; at 0 they are refused and the green bar blinks. The client predicts its own roll at once (motion,
+  pose, dust); the server grants the stamina spend and the i-frame window, in which `damagePlayer` ignores
+  every hit and boss chains cannot root, refuses skills during the dodge and checks the distance moved.
 - **One resolver.** `Logic/SkillResolver` is the only place that turns skill config, socketed gems,
   stats and the transform into final numbers. The server deals damage from its result and the VFX read
   their variant (element, radiant, blade count, spread) from the same result.
@@ -67,7 +72,7 @@ PC and the camera center on touch.
    Config/  pure data: Skills, Gems, Passives, Progression, Enemies, Strings, AssetIds
    Logic/   pure Luau, no Roblox API, tested in Lune:
             Progression, PassiveTree, GemRules, Stats, SkillResolver, Damage, BladeLayout,
-            BossPlan, PoseClip
+            BossPlan, PoseClip, Stamina
    Models/  SwordModel, LanceModel, TyrantArmor (part-built)   Net.luau (remote names)   VfxPalette
 
   Client (StarterPlayerScripts.Client)          Server (ServerScriptService.Server)

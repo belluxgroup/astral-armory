@@ -26,6 +26,7 @@ return function(t)
 				"unlockAt",
 				"summonBoss",
 				"bossName",
+				"dodge",
 			}
 		do
 			t.ok(has(key), key)

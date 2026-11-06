@@ -879,7 +879,7 @@ local function onDodge(player: Player, dir: unknown)
 	local root = live.root :: BasePart
 	local origin = root.Position
 	local wish = Vector3.new((dir :: Vector3).X, 0, (dir :: Vector3).Z)
-	local kind = DodgeRules.kindFor(wish.X, wish.Z)
+	local kind: DodgeRules.Kind = DodgeRules.kindFor(wish.X, wish.Z)
 	local move = DodgeConfig.move(kind)
 	-- A roll goes along `dir`; a backstep goes straight back from the way the character faces.
 	local heading = if kind == "roll" then wish.Unit else -flatDirection(origin, origin, root)
