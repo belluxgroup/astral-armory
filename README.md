@@ -119,6 +119,9 @@ selene src
 | ![Ascension](docs/screenshots/06-skill-t-ascension.png) | ![Passive tree](docs/screenshots/08-passive-tree.png) |
 | ![Frost gem socketed](docs/screenshots/09-gem-socket-frost.png) | ![Frost blade rain](docs/screenshots/10-frost-blade-rain.png) |
 | ![Phone HUD with touch buttons](docs/screenshots/15-phone-hud-touch.png) | ![Passive tree on a phone](docs/screenshots/16-phone-passive-tree.png) |
+| ![Golden Tyrant idle, armor and halo](docs/screenshots/21-boss-idle-armor.png) | ![Golden Tyrant chains](docs/screenshots/22-boss-chains.png) |
+| ![Golden Tyrant armory in phase 2](docs/screenshots/23-boss-armory-phase2.png) | ![Golden Tyrant ultimate](docs/screenshots/24-boss-ultimate.png) |
+| ![Golden Tyrant defeated](docs/screenshots/25-boss-defeated.png) | |
 
 ## Docs
 
