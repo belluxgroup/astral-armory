@@ -196,6 +196,7 @@ function Screen.new(parent: Instance, actions: Actions): Screen
 
 	-- Header -------------------------------------------------------------------------------------------
 	local header = Theme.panel({
+		Active = true,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 12),
 		Size = UDim2.fromOffset(HEADER_WIDTH, HEADER_HEIGHT),

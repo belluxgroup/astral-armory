@@ -8,12 +8,14 @@ local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net")
 local Ascension = require(script.Parent:WaitForChild("Vfx"):WaitForChild("Ascension"))
 
 local DamageNumbers = require(script.DamageNumbers)
+local GemsScreen = require(script.Gems)
 local Hud = require(script.Hud)
 local PassiveTreeScreen = require(script.PassiveTree)
 local Types = require(script.Types)
 
 type PlayerState = Types.PlayerState
 type Actions = Types.Actions
+type Menu = { setOpen: (boolean) -> (), isOpen: () -> boolean }
 
 local UI = {}
 
@@ -70,6 +72,17 @@ function UI.start(): Types.UIHandle
 	})
 
 	local passives = PassiveTreeScreen.new(playerGui, actions)
+	local gems = GemsScreen.new(playerGui, actions)
+
+	-- One menu at a time.
+	local function toggle(target: Menu, other: Menu)
+		if target.isOpen() then
+			target.setOpen(false)
+		else
+			other.setOpen(false)
+			target.setOpen(true)
+		end
+	end
 
 	-- Ascension aura for the local character follows the server's transformed flag, including after respawn.
 	local transformed = false
@@ -90,6 +103,7 @@ function UI.start(): Types.UIHandle
 		trackCooldowns(s)
 		hud.update(s)
 		passives.update(s)
+		gems.update(s)
 		if s.transformed ~= transformed then
 			transformed = s.transformed
 			applyTransform()
@@ -102,9 +116,11 @@ function UI.start(): Types.UIHandle
 
 	handle = {
 		togglePassives = function()
-			passives.setOpen(not passives.isOpen())
+			toggle(passives, gems)
 		end,
-		toggleGems = function() end,
+		toggleGems = function()
+			toggle(gems, passives)
+		end,
 		getState = function(): PlayerState?
 			return state
 		end,
