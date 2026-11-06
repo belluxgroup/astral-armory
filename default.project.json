@@ -17,6 +17,9 @@
       "$properties": { "StreamingEnabled": true, "FallenPartsDestroyHeight": -50 },
       "Arena": { "$path": "assets/Arena.rbxm" }
     },
+    "TextChatService": {
+      "$properties": { "ChatVersion": "TextChatService" }
+    },
     "Lighting": {
       "$properties": {
         "Technology": "Future",

@@ -296,11 +296,7 @@ local function onPlayerAdded(player: Player)
 	if connections[player] then
 		return
 	end
-	connections[player] = {
-		player.Chatted:Connect(function(message: string)
-			handleDebugCommand(player, message)
-		end),
-	}
+	connections[player] = {}
 	task.spawn(load, player)
 end
 
