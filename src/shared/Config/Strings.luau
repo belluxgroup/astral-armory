@@ -35,6 +35,7 @@ local Strings: { [string]: string } = {
 	bossName = "Hộ Vệ Nhật Thực",
 	bossNeedLevel = "Cần đạt cấp 8 để triệu hồi",
 	bossCooldown = "Tế đàn đang hồi lại",
+	bossTooFar = "Hãy đến gần tế đàn để triệu hồi",
 	bossDefeated = "Đã hạ gục Hộ Vệ Nhật Thực!",
 	enemy_hollow_knight = "Hiệp Sĩ Rỗng",
 

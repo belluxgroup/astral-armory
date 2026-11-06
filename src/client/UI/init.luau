@@ -11,6 +11,7 @@ local DamageNumbers = require(script.DamageNumbers)
 local GemsScreen = require(script.Gems)
 local Hud = require(script.Hud)
 local PassiveTreeScreen = require(script.PassiveTree)
+local Theme = require(script.Theme)
 local Types = require(script.Types)
 
 type PlayerState = Types.PlayerState
@@ -131,6 +132,13 @@ function UI.start(): Types.UIHandle
 			for key, fn in newActions :: any do
 				(actions :: any)[key] = fn
 			end
+		end,
+		toast = function(stringKey: string)
+			Theme.toast(
+				playerGui:FindFirstChild("AstralHud") or playerGui,
+				Theme.text(stringKey),
+				Theme.colors.danger
+			)
 		end,
 	}
 	return handle

@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Enemies = require(Shared:WaitForChild("Config"):WaitForChild("Enemies"))
 local Skills = require(Shared:WaitForChild("Config"):WaitForChild("Skills"))
 
 local Types = require(script.Parent:WaitForChild("UI"):WaitForChild("Types"))
@@ -63,7 +64,38 @@ end
 function Input.start(ui: UIHandle)
 	local remotes = Net.client()
 
+	local warden = Enemies.eclipse_warden
+	local altarReadyAt = 0
+	remotes.BossFx.OnClientEvent:Connect(function(evt)
+		if evt.event == "defeated" then
+			altarReadyAt = os.clock() + warden.altarCooldown
+		end
+	end)
+
+	-- The server checks the same rules and ignores a bad summon; these checks only explain why.
 	local function summonBoss()
+		local state = ui.getState()
+		if state and state.level < warden.summonLevel then
+			ui.toast("bossNeedLevel")
+			return
+		end
+		if os.clock() < altarReadyAt then
+			ui.toast("bossCooldown")
+			return
+		end
+		local arena = workspace:FindFirstChild("Arena")
+		local altar = arena and arena:FindFirstChild("BossAltar")
+		local altarPart = altar and altar:FindFirstChild("Altar")
+		local root = rootPart()
+		if
+			root
+			and altarPart
+			and altarPart:IsA("BasePart")
+			and (root.Position - altarPart.Position).Magnitude > warden.summonRange
+		then
+			ui.toast("bossTooFar")
+			return
+		end
 		remotes.SummonBoss:FireServer()
 	end
 

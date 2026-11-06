@@ -22,6 +22,7 @@ export type UIHandle = {
 	getState: () -> PlayerState?,
 	cooldownLeft: (skillId: string) -> number,
 	setActions: (actions: Actions) -> (),
+	toast: (stringKey: string) -> (),
 }
 
 -- Sockets are dense arrays with `false` for an empty slot (see Net.PlayerState).
