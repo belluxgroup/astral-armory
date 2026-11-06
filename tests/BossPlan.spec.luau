@@ -25,7 +25,7 @@ local function v(x: number, y: number, z: number): BossPlan.Vec
 	return { x = x, y = y, z = z }
 end
 
-return function(t)
+return function(t: any)
 	t.test("ultimate comes first in phase 2 only", function()
 		t.eq(BossPlan.next(state(2, 5, 10)), "ultimate")
 		t.eq(BossPlan.next(state(1, 5, 10)), "chains", "phase 1 never ultimates")

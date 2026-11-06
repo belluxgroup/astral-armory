@@ -26,7 +26,7 @@ local BossPlan = {}
 
 BossPlan.ULTIMATE_FIRST_DELAY = W.ultimate.firstDelay
 
-local function ready(state: PlanState, action: Action): boolean
+local function ready(state: PlanState, action: string): boolean
 	return state.now >= (state.cooldowns[action] or 0)
 end
 
@@ -47,7 +47,7 @@ function BossPlan.next(state: PlanState): Action
 end
 
 -- Seconds until `action` may be picked again after it starts; 0 for the basic attacks.
-function BossPlan.cooldown(action: Action, phase: number): number
+function BossPlan.cooldown(action: string, phase: number): number
 	if action == "ultimate" then
 		return W.ultimate.cooldown
 	elseif action == "chains" then

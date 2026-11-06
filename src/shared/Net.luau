@@ -89,14 +89,51 @@ export type DamagePopup = {
 	element: Element,
 }
 
-export type BossEvent = "telegraph" | "slam" | "blades" | "enrage" | "defeated"
+export type BossEvent =
+	"spawn"
+	| "pose"
+	| "melee"
+	| "volley"
+	| "armory"
+	| "chains"
+	| "ultimate_charge"
+	| "ultimate_fire"
+	| "enrage"
+	| "defeated"
 
--- BossFx payload, sent to all clients.
+-- BossFx payload (boss rework spec §3), sent to all clients. Every event carries `model`
+-- (the boss, streamed to every client) and `event`. Times are seconds from receipt,
+-- `dir` is flat and unit length, `angle` is the cone half-angle in degrees.
+--   spawn            position
+--   pose             clip: a PoseClips name to play on `model` (boss_idle on spawn, then
+--                    boss_melee, boss_volley, boss_armory, boss_chains, boss_ultimate_charge,
+--                    boss_ultimate_fire, boss_enrage, boss_defeated, each with its action)
+--   melee            origin, dir, delay (windup until the cut lands)
+--   volley           portals, targets, delay, interval: weapon i flies from portals[i] and
+--                    lands on targets[i] at delay + (i - 1) * interval
+--   armory           portals, targets, delay, interval, telegraph: as volley; each landing
+--                    has a line telegraph that fills over the `telegraph` before it
+--   chains           position, radius, delay (ring fill), duration (root time after delay)
+--   ultimate_charge  origin, dir, duration, length, angle
+--   ultimate_fire    origin, dir, length, angle
+--   enrage           (none)
+--   defeated         position
 export type BossFx = {
+	model: Model,
 	event: BossEvent,
 	position: Vector3?,
-	radius: number?,
+	clip: string?,
+	origin: Vector3?,
+	dir: Vector3?,
 	delay: number?,
+	interval: number?,
+	telegraph: number?,
+	portals: { Vector3 }?,
+	targets: { Vector3 }?,
+	radius: number?,
+	duration: number?,
+	length: number?,
+	angle: number?,
 }
 
 export type Remotes = { [string]: RemoteEvent }

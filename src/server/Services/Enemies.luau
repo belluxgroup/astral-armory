@@ -21,6 +21,7 @@ export type RigOptions = {
 	scale: number?,
 	bodyColor: Color3?,
 	eyeColor: Color3?,
+	eyes: boolean?, -- default true; false leaves the face bare for a costume to add its own
 }
 
 type Ring = "inner" | "outer"
@@ -167,7 +168,7 @@ function Enemies.spawnRig(opts: RigOptions): Model
 	end
 
 	local head = model:FindFirstChild("Head")
-	if head and head:IsA("BasePart") then
+	if head and head:IsA("BasePart") and opts.eyes ~= false then
 		for _, side in { -1, 1 } do
 			local eye = Instance.new("Part")
 			eye.Name = "Eye"
