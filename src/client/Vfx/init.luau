@@ -1,13 +1,14 @@
 --!strict
 -- VFX controller (contract addendum item 7). `Vfx.start()` connects SkillFx,
--- dispatching each FxEvent to the module for its skill, and BossFx. Effects only render:
--- every number they show comes from the event's `spec`.
+-- dispatching each FxEvent to the module for its skill, and BossFx, which goes to the
+-- Golden Tyrant effects in Vfx/Boss. Effects only render: every number they show comes
+-- from the event's `spec` or the BossFx payload.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 local Ascension = require(script.Ascension)
-local BossTelegraph = require(script.BossTelegraph)
+local Boss = require(script.Boss)
 local Common = require(script.Common)
 local Poses = require(script.Poses)
 
@@ -64,9 +65,10 @@ function Vfx.start()
 	started = true
 	local remotes = Net.client()
 	remotes[Net.names.SkillFx].OnClientEvent:Connect(dispatch)
+	Boss.start()
 	remotes[Net.names.BossFx].OnClientEvent:Connect(function(evt: Common.BossFx)
 		task.spawn(function()
-			local ok, err = pcall(BossTelegraph.play :: any, evt)
+			local ok, err = pcall(Boss.play :: any, evt)
 			if not ok then
 				warn(`[Vfx] boss {type(evt) == "table" and evt.event or "?"} failed: {err}`)
 			end
