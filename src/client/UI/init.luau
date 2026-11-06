@@ -9,6 +9,7 @@ local Ascension = require(script.Parent:WaitForChild("Vfx"):WaitForChild("Ascens
 
 local DamageNumbers = require(script.DamageNumbers)
 local Hud = require(script.Hud)
+local PassiveTreeScreen = require(script.PassiveTree)
 local Types = require(script.Types)
 
 type PlayerState = Types.PlayerState
@@ -68,6 +69,8 @@ function UI.start(): Types.UIHandle
 		end,
 	})
 
+	local passives = PassiveTreeScreen.new(playerGui, actions)
+
 	-- Ascension aura for the local character follows the server's transformed flag, including after respawn.
 	local transformed = false
 	local function applyTransform()
@@ -86,6 +89,7 @@ function UI.start(): Types.UIHandle
 		state = s
 		trackCooldowns(s)
 		hud.update(s)
+		passives.update(s)
 		if s.transformed ~= transformed then
 			transformed = s.transformed
 			applyTransform()
@@ -97,7 +101,9 @@ function UI.start(): Types.UIHandle
 	end)
 
 	handle = {
-		togglePassives = function() end,
+		togglePassives = function()
+			passives.setOpen(not passives.isOpen())
+		end,
 		toggleGems = function() end,
 		getState = function(): PlayerState?
 			return state

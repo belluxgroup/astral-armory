@@ -37,7 +37,7 @@ Theme.fonts = {
 }
 
 -- Instance builder: Parent is assigned last so the instance is fully configured before it replicates/renders.
-function Theme.make(className: string, props: { [string]: any }?, children: { Instance }?): any
+function Theme.make(className: string, props: { [string]: any }?, children: { any }?): any
 	local instance = (Instance.new :: any)(className)
 	local parent = nil
 	if props then
@@ -131,7 +131,7 @@ function Theme.panel(props: { [string]: any }): Frame
 	for key, value in props do
 		defaults[key] = value
 	end
-	return make("Frame", defaults, { Theme.corner(10), Theme.stroke(Theme.colors.gold, 1, 0.7) })
+	return make("Frame", defaults, { Theme.corner(10) :: Instance, Theme.stroke(Theme.colors.gold, 1, 0.7) })
 end
 
 function Theme.tween(
@@ -194,73 +194,22 @@ function Theme.autoScale(object: GuiObject, designWidth: number?, designHeight: 
 	return scale
 end
 
--- Text comes from Config.Strings. Keys outside the Strings contract fall back to the Vietnamese below,
--- so the UI never shows a raw key; move these into Strings when it grows.
+-- Text comes from Config.Strings. The few UI-only hints it does not carry fall back to the Vietnamese
+-- below, so the UI never shows a raw key.
 local FALLBACK: { [string]: string } = {
-	hp = "Máu",
-	energy = "Năng lượng",
-	level = "Cấp",
-	xp = "Kinh nghiệm",
-	points = "Điểm",
-	passives = "Thiên Phú",
-	gems = "Ngọc Hỗ Trợ",
-	reset = "Đặt lại",
-	locked = "Đã khoá",
-	unlockAt = "Mở ở cấp",
-	summonBoss = "Triệu hồi Boss",
-	pointsLeft = "Điểm còn lại",
-	close = "Đóng",
-	inventory = "Kho ngọc",
-	noGems = "Chưa có ngọc. Hạ quái để nhận thêm.",
-	gemHint = "Chọn một viên ngọc, rồi chọn ô khảm.",
-	unsocketHint = "Chuột phải hoặc giữ lâu vào ô để tháo ngọc.",
-	treeHint = "Kéo để di chuyển, cuộn hoặc chụm hai ngón để thu phóng.",
-	tapAgain = "Chạm lần nữa để học.",
-	clickToLearn = "Nhấn để học.",
+	noGems = "Chưa có ngọc. Hạ quái để nhận thêm",
+	treeHint = "Kéo để di chuyển, cuộn hoặc chụm hai ngón để thu phóng",
+	tapAgain = "Chạm lần nữa để học",
 	learned = "Đã học",
-	kind_start = "Khởi đầu",
-	kind_small = "Nút thường",
-	kind_notable = "Nút đặc biệt",
-	kind_keystone = "Nút then chốt",
-	stat_damage = "Sát thương",
-	stat_maxHp = "Máu tối đa",
-	stat_maxEnergy = "Năng lượng tối đa",
-	stat_energyRegen = "Hồi năng lượng mỗi giây",
-	stat_cooldown = "Thời gian hồi chiêu",
-	stat_moveSpeed = "Tốc độ di chuyển",
-	stat_critChance = "Tỉ lệ chí mạng",
-	stat_critMul = "Sát thương chí mạng",
-	stat_aoe = "Phạm vi",
-	stat_shield = "Sức chặn của khiên",
-	keystone_blood_oath = "Chiêu thức tốn Máu thay cho Năng lượng. +40% sát thương.",
-	keystone_endless_arsenal = "Mưa Kiếm Tinh Tú thêm 6 thanh kiếm, mỗi thanh gây 75% sát thương.",
-	keystone_radiant_mind = "Thăng Hoa kéo dài tới khi cạn Năng lượng, tiêu hao 6 Năng lượng mỗi giây.",
-	reason_no_sockets = "Chiêu này không có ô khảm.",
-	reason_bad_slot = "Ô khảm không hợp lệ.",
-	reason_tag = "Ngọc không hợp với chiêu này.",
-	reason_element = "Mỗi chiêu chỉ mang một nguyên tố.",
-	reason_duplicate = "Chiêu này đã khảm ngọc này rồi.",
-	reason_unknown = "Không tìm thấy nút.",
-	reason_allocated = "Nút này đã được học.",
-	reason_no_points = "Hết điểm thiên phú.",
-	reason_not_linked = "Cần học một nút liền kề trước.",
 }
 
 function Theme.text(key: string): string
-	local value = (Strings :: any)[key]
-	if type(value) == "string" then
-		return value
-	end
-	return FALLBACK[key] or key
+	return Strings[key] or FALLBACK[key] or key
 end
 
--- Text with one number: uses the string as a format when it has a %, else appends the number.
+-- Strings labels carry no numbers; the number goes after the label ("Cấp 5").
 function Theme.textWith(key: string, value: number | string): string
-	local template = Theme.text(key)
-	if string.find(template, "%", 1, true) then
-		return string.format(template, value)
-	end
-	return template .. " " .. tostring(value)
+	return Theme.text(key) .. " " .. tostring(value)
 end
 
 -- A short message that fades in near the bottom of `screen`, replacing any message already showing.

@@ -1,27 +1,12 @@
 --!strict
--- Client-side mirror of the payload types in spec §5.3, shared by the UI screens and Input.
+-- UI-side types. Payload types come from Shared.Net (spec §5.3).
 
-export type Element = "none" | "frost" | "flame" | "storm"
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-export type GemInstance = { id: string, gemId: string }
+local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 
-export type PlayerState = {
-	level: number,
-	xp: number,
-	xpToNext: number,
-	points: number,
-	allocated: { [string]: true },
-	gems: { GemInstance },
-	sockets: { [string]: { [any]: GemInstance? } },
-	hp: number,
-	maxHp: number,
-	energy: number,
-	maxEnergy: number,
-	cooldowns: { [string]: number },
-	transformed: boolean,
-	transformEndsAt: number?,
-	serverClock: number,
-}
+export type PlayerState = Net.PlayerState
+export type GemInstance = Net.GemInstance
 
 -- Remote calls the UI needs. Input owns the remotes and installs these through ui.setActions.
 export type Actions = {
@@ -39,13 +24,17 @@ export type UIHandle = {
 	setActions: (actions: Actions) -> (),
 }
 
--- Sockets cross the network as a sparse table, which Roblox may re-key with strings. Read both forms.
+-- Sockets are dense arrays with `false` for an empty slot (see Net.PlayerState).
 local function socketAt(state: PlayerState, skillId: string, slot: number): GemInstance?
 	local row = state.sockets[skillId]
 	if not row then
 		return nil
 	end
-	return row[slot] or row[tostring(slot)]
+	local gem = row[slot]
+	if gem then
+		return gem :: GemInstance
+	end
+	return nil
 end
 
 return {
