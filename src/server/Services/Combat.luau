@@ -1,7 +1,7 @@
 --!strict
--- CombatService (spec §5.7): CastSkill validation, cooldowns, Energy and stamina regen,
--- hex_aegis absorb, ascension, hit detection, damage, elements (burn, slow, chain) and the
--- SkillFx and DamagePopup broadcasts. All numbers come from SkillResolver; nothing from the
+-- CombatService (spec §5.7): CastSkill and Dodge validation, cooldowns, Energy and stamina
+-- regen, dodge i-frames, hex_aegis absorb, ascension, hit detection, damage, elements (burn,
+-- slow, chain) and the SkillFx and DamagePopup broadcasts. All numbers come from SkillResolver; nothing from the
 -- client is trusted.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +22,7 @@ local SwordModel = require(Shared.Models.SwordModel)
 
 local Rules = script.Parent.Parent.Rules
 local Cooldowns = require(Rules.Cooldowns)
+local DodgeRules = require(Rules.Dodge)
 local RateLimit = require(Rules.RateLimit)
 local ProfileRules = require(Rules.Profile)
 local PlayerData = require(script.Parent.PlayerData)
@@ -35,6 +36,7 @@ type Live = {
 	stats: Stats.Stats,
 	energy: number,
 	stamina: Stamina.State,
+	dodge: DodgeRules.State,
 	cooldowns: { [string]: number },
 	transformed: boolean,
 	transformEndsAt: number?,
@@ -77,6 +79,9 @@ local CHAIN_RANGE = 15
 local BURN_TICKS = 4
 local MAX_COORD = 1e5
 local EQUIP_TIMEOUT = 10
+-- The displacement check runs this long after a dodge ends, so the client's last
+-- replicated position has arrived.
+local DISPLACEMENT_LAG = 0.2
 
 -- Element and explosion tuning lives on the gem configs.
 local frostGem = Gems.frost
@@ -376,6 +381,13 @@ function Combat.getLive(player: Player): PlayerData.LiveFields?
 	}
 end
 
+-- True while the player is inside a dodge's i-frame window. Every source of player damage
+-- goes through damagePlayer, which ignores it then; Boss chains also skip such a player.
+function Combat.inIFrames(player: Player): boolean
+	local live = lives[player]
+	return live ~= nil and DodgeRules.invulnerable(live.dodge, os.clock())
+end
+
 -- Damages a player, absorbed first by an active hex_aegis. Fires DamagePopup.
 function Combat.damagePlayer(player: Player, amount: number)
 	local live = lives[player]
@@ -385,6 +397,9 @@ function Combat.damagePlayer(player: Player, amount: number)
 	local humanoid = live.humanoid :: Humanoid
 	local character = player.Character
 	if character and character:FindFirstChildOfClass("ForceField") then
+		return
+	end
+	if Combat.inIFrames(player) then
 		return
 	end
 	local remaining = amount
@@ -450,6 +465,7 @@ local function setupCharacter(live: Live, character: Model)
 	recompute(live)
 	live.energy = live.stats.maxEnergy
 	live.stamina = Stamina.new(live.stats.maxStamina)
+	live.dodge = DodgeRules.new()
 	humanoid.MaxHealth = live.stats.maxHp
 	humanoid.Health = live.stats.maxHp
 	humanoid.WalkSpeed = live.stats.moveSpeed
@@ -483,6 +499,7 @@ local function createLive(player: Player, profile: ProfileRules.Profile)
 		stats = Stats.compute(profile.level, profile.allocated, { transformed = false }),
 		energy = 0,
 		stamina = Stamina.new(0),
+		dodge = DodgeRules.new(),
 		cooldowns = {},
 		transformed = false,
 		transformEndsAt = nil,
@@ -735,6 +752,10 @@ local function onCast(player: Player, skillId: unknown, aim: unknown)
 	if not isAlive(live) then
 		return
 	end
+	-- No skill, basic included, during a dodge.
+	if DodgeRules.active(live.dodge, os.clock()) then
+		return
+	end
 	local profile = PlayerData.get(player)
 	if not profile then
 		return
@@ -810,6 +831,74 @@ local function onCast(player: Player, skillId: unknown, aim: unknown)
 	PlayerData.onChanged(player)
 end
 
+-- Dodge ---------------------------------------------------------------------------------
+
+-- A boss chains root holds WalkSpeed at 0 (Boss rootPlayer); nothing else sets it to 0.
+local function isRooted(live: Live): boolean
+	local humanoid = live.humanoid
+	return humanoid ~= nil and humanoid.WalkSpeed <= 0
+end
+
+-- The client moves its own character, so the server only checks afterwards that one dodge
+-- did not carry it further than the sanity limit, and puts it back where the dodge began
+-- if it did.
+local function checkDisplacement(live: Live, root: BasePart, from: Vector3)
+	if lives[live.player] ~= live or live.root ~= root or root.Parent == nil then
+		return
+	end
+	local offset = root.Position - from
+	if DodgeRules.withinDisplacement(offset.X, offset.Z) then
+		return
+	end
+	local moved = Vector3.new(offset.X, 0, offset.Z).Magnitude
+	warn(`[Combat] {live.player.Name} moved {math.floor(moved)} studs in one dodge; moved back`)
+	local character = live.player.Character
+	if character and character.PrimaryPart == root then
+		character:PivotTo(CFrame.new(from) * root.CFrame.Rotation)
+	end
+end
+
+-- Dodge(dir): `dir` is the world-space move direction, a zero vector for a backstep. The
+-- server grants the stamina spend and the i-frame window, then broadcasts the move. It
+-- ignores the basic cooldown on purpose: a dodge cancels a swing's recovery.
+local function onDodge(player: Player, dir: unknown)
+	local live = lives[player]
+	if not live or not live.limiter:allow(os.clock()) then
+		return
+	end
+	if typeof(dir) ~= "Vector3" or not isFinite(dir :: Vector3) then
+		return
+	end
+	if not isAlive(live) or isRooted(live) then
+		return
+	end
+	local now = os.clock()
+	if not Stamina.canSpend(live.stamina) or not DodgeRules.ready(live.dodge, now) then
+		return
+	end
+	local root = live.root :: BasePart
+	local origin = root.Position
+	local wish = Vector3.new((dir :: Vector3).X, 0, (dir :: Vector3).Z)
+	local kind = DodgeRules.kindFor(wish.X, wish.Z)
+	local move = DodgeConfig.move(kind)
+	-- A roll goes along `dir`; a backstep goes straight back from the way the character faces.
+	local heading = if kind == "roll" then wish.Unit else -flatDirection(origin, origin, root)
+	Stamina.spend(live.stamina, move.cost, now)
+	DodgeRules.start(live.dodge, kind, now)
+
+	local event: Net.DodgeFx = {
+		skillId = "dodge",
+		casterUserId = player.UserId,
+		origin = origin,
+		target = origin + heading * move.distance,
+		spec = { kind = kind },
+		serverTime = Workspace:GetServerTimeNow(),
+	}
+	remotes.SkillFx:FireAllClients(event)
+	task.delay(move.duration + DISPLACEMENT_LAG, checkDisplacement, live, root, origin)
+	PlayerData.onChanged(player)
+end
+
 local function onHeartbeat(dt: number)
 	local now = os.clock()
 	for player, live in lives do
@@ -852,6 +941,7 @@ function Combat.start()
 	end)
 	Players.PlayerRemoving:Connect(removeLive)
 	remotes.CastSkill.OnServerEvent:Connect(onCast)
+	remotes.Dodge.OnServerEvent:Connect(onDodge)
 	RunService.Heartbeat:Connect(onHeartbeat)
 end
 

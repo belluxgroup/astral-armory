@@ -85,6 +85,20 @@ export type FxEvent = {
 	combo: number?,
 }
 
+export type DodgeKind = "roll" | "backstep"
+
+-- SkillFx payload for a dodge (dodge spec §2), sent to all clients. It carries no
+-- SkillSpec: `spec` only names the move. `target` is where the move heads,
+-- origin + direction * distance. The caster's own client predicts its dodge and skips it.
+export type DodgeFx = {
+	skillId: "dodge",
+	casterUserId: number,
+	origin: Vector3,
+	target: Vector3,
+	spec: { kind: DodgeKind },
+	serverTime: number,
+}
+
 -- DamagePopup payload, sent to all clients.
 export type DamagePopup = {
 	position: Vector3,
@@ -150,9 +164,10 @@ local Net = {}
 --   ResetPassives()
 --   SocketGem(skillId: string, slot: number, gemInstanceId: string?)  -- nil unsockets
 --   SummonBoss()
+--   Dodge(dir: Vector3)  -- world-space move direction; a zero vector asks for a backstep
 -- Server to client:
 --   StateSync(PlayerState)   owner only, at most 10 per second
---   SkillFx(FxEvent)         all
+--   SkillFx(FxEvent)         all (DodgeFx when skillId is "dodge")
 --   DamagePopup(DamagePopup) all
 --   BossFx(BossFx)           all
 Net.names = {
@@ -161,6 +176,7 @@ Net.names = {
 	ResetPassives = "ResetPassives",
 	SocketGem = "SocketGem",
 	SummonBoss = "SummonBoss",
+	Dodge = "Dodge",
 	StateSync = "StateSync",
 	SkillFx = "SkillFx",
 	DamagePopup = "DamagePopup",

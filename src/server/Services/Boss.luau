@@ -489,7 +489,7 @@ local function chains(state: State, target: Target)
 	for _, entry in playersInArea(center, cfg.radius) do
 		local character = entry.player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
+		if humanoid and not Combat.inIFrames(entry.player) then
 			rootPlayer(entry.player, humanoid, cfg.duration)
 			Combat.damagePlayer(entry.player, cfg.damage)
 			if victim == nil or entry.player == target.player then
