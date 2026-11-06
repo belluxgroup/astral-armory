@@ -34,10 +34,15 @@ function DamageNumbers.spawn(position: Vector3, amount: number, crit: boolean, e
 		Size = UDim2.fromOffset(180, 64),
 		Parent = anchor,
 	})
+	local rounded = math.floor(amount + 0.5)
+	-- 0 means hex_aegis absorbed the whole hit.
+	local text = if rounded <= 0
+		then Theme.text("blocked")
+		else tostring(rounded) .. (if crit then "!" else "")
 	local label = Theme.label({
 		Size = UDim2.fromScale(1, 1),
 		FontFace = Theme.fonts.heavy,
-		Text = tostring(math.max(1, math.floor(amount + 0.5))) .. (if crit then "!" else ""),
+		Text = text,
 		TextColor3 = palette.glow,
 		TextSize = if crit then 40 else 26,
 		TextStrokeColor3 = Color3.fromHex("1A0F08"),

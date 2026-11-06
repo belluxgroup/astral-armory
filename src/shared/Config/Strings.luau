@@ -13,6 +13,7 @@ local Strings: { [string]: string } = {
 	locked = "Đã khoá",
 	unlockAt = "Mở ở cấp",
 	levelUp = "Lên cấp!",
+	blocked = "Chặn",
 
 	-- screens
 	passives = "Thiên Phú",
