@@ -301,6 +301,20 @@ local function trySummon(player: Player)
 	if not profile or profile.level < WARDEN.summonLevel or not Combat.isAlive(player) then
 		return
 	end
+	-- Summon only at the altar. Without one (see Boss.start) the remote alone summons.
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local altarPart = prompt and prompt.Parent
+	if
+		altarPart
+		and altarPart:IsA("BasePart")
+		and (
+			not (root and root:IsA("BasePart"))
+			or (root.Position - altarPart.Position).Magnitude > WARDEN.summonRange
+		)
+	then
+		return
+	end
 	summoning = true
 	local ok, err = pcall(function()
 		spawnBoss()

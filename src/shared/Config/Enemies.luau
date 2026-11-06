@@ -32,6 +32,7 @@ export type EclipseWarden = {
 	xp: (level: number) -> number,
 	gemDrops: number,
 	summonLevel: number,
+	summonRange: number,
 	altarCooldown: number,
 	scale: number,
 	speed: number,
@@ -85,6 +86,7 @@ local eclipseWarden: EclipseWarden = {
 	end,
 	gemDrops = 2,
 	summonLevel = 8,
+	summonRange = 20, -- studs from the altar, for the remote and the HUD button
 	altarCooldown = 60,
 	scale = 3,
 	speed = 12,
