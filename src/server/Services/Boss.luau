@@ -47,6 +47,7 @@ local MELEE_RECOVER = 0.25 -- stands after a cut lands
 local ULTIMATE_RECOVER = 0.6 -- stands after the ultimate fires
 local LUNGE_TIME = 0.12
 local LUNGE_GAP = 4 -- the chains lunge stops this far short of the rooted player
+local LUNGE_BODY = 2.5 -- and this far short of a pillar or wall in its path
 local CORPSE_TIME = 4
 local ARENA_TIMEOUT = 10
 local GROUND_PROBE = 60
@@ -157,17 +158,20 @@ local function buildSightWorld(arena: Instance)
 	sightWorld = world
 end
 
-local function sightBlocked(from: Vector3, to: Vector3): boolean
-	local world = sightWorld
-	if not world then
+local function sightRaycast(from: Vector3, to: Vector3): RaycastResult?
+	if not sightWorld then
 		local arena = Workspace:FindFirstChild("Arena")
 		if not arena then
-			return false
+			return nil
 		end
 		buildSightWorld(arena)
-		world = sightWorld
 	end
-	return world ~= nil and world:Raycast(from, to - from) ~= nil
+	local world = sightWorld
+	return if world then world:Raycast(from, to - from) else nil
+end
+
+local function sightBlocked(from: Vector3, to: Vector3): boolean
+	return sightRaycast(from, to) ~= nil
 end
 
 -- Targets ------------------------------------------------------------------------------
@@ -454,6 +458,16 @@ local function lunge(state: State, victim: Target)
 		return
 	end
 	local stop = to - gap.Unit * LUNGE_GAP
+	-- The lerp below moves the root directly, so it would pass through a pillar: stop at it.
+	local blocker = sightRaycast(from, Vector3.new(stop.X, from.Y, stop.Z))
+	if blocker then
+		local reach = flat(blocker.Position - from).Magnitude - LUNGE_BODY
+		if reach <= 0 then
+			face(state, to)
+			return
+		end
+		stop = from + gap.Unit * reach
+	end
 	local lift = from.Y - groundAt(from).Y
 	local y = groundAt(stop).Y + lift
 	local goal = CFrame.lookAt(Vector3.new(stop.X, y, stop.Z), Vector3.new(to.X, y, to.Z))
