@@ -1,6 +1,7 @@
 local PoseClip = require("../src/shared/Logic/PoseClip")
 local PoseClips = require("../src/shared/Config/PoseClips")
 local Skills = require("../src/shared/Config/Skills")
+local Dodge = require("../src/shared/Config/Dodge")
 
 local clip = {
 	duration = 1,
@@ -22,6 +23,17 @@ local loopClip = {
 		{ t = 0, pose = { A = { 0, 0, 0 } }, ease = "inout" },
 		{ t = 1, pose = { A = { 10, 0, 0 } }, ease = "inout" },
 		{ t = 2, pose = { A = { 0, 0, 0 } } },
+	},
+}
+
+local moveClip = {
+	duration = 1,
+	blendIn = 0,
+	blendOut = 0,
+	keys = {
+		{ t = 0, pose = { A = { 0, 0, 0 } } },
+		{ t = 0.5, pose = { A = { -180, 0, 0, 0, -1.2, 0.5 } } },
+		{ t = 1, pose = { A = { -360, 0, 0 } } },
 	},
 }
 
@@ -132,5 +144,89 @@ return function(t)
 			t.eq(c.loop == true, name == "boss_idle", name)
 		end
 		t.ok(PoseClips.clips.boss_ultimate_charge.duration >= 2.5, "charge holds for the 2.5 s charge")
+	end)
+	t.test("position channels interpolate, and a missing position counts as 0", function()
+		local a = PoseClip.sample(moveClip, 0.25)
+		t.eq(#a.A, 6)
+		t.near(a.A[1], -90)
+		t.near(a.A[5], -0.6)
+		t.near(a.A[6], 0.25)
+		local b = PoseClip.sample(moveClip, 0.75)
+		t.near(b.A[1], -270)
+		t.near(b.A[5], -0.6)
+		-- a 3-number pose stays 3 numbers
+		t.eq(#PoseClip.sample(clip, 0.25).A, 3)
+	end)
+	t.test("validation accepts 3 or 6 numbers per joint", function()
+		local known = { A = true }
+		t.ok((PoseClip.validate(moveClip, known)))
+		local bad = table.clone(moveClip)
+		bad.keys = {
+			{ t = 0, pose = { A = { 0, 0, 0, 1 } } },
+			{ t = 1, pose = {} },
+		}
+		local ok, why = PoseClip.validate(bad, known)
+		t.eq(ok, false)
+		t.eq(why, "key 1: A needs 3 angles, or 3 angles and 3 offsets")
+	end)
+	t.test("a loop that only differs in position does not close", function()
+		local known = { A = true }
+		local loop = {
+			duration = 1,
+			blendIn = 0,
+			blendOut = 0,
+			loop = true,
+			keys = {
+				{ t = 0, pose = { A = { 0, 0, 0 } } },
+				{ t = 1, pose = { A = { 0, 0, 0, 0, 0.5, 0 } } },
+			},
+		}
+		t.eq(select(2, PoseClip.validate(loop, known)), "loop does not close")
+		loop.keys[2].pose.A = { 0, 0, 0, 0, 0, 0 }
+		t.ok((PoseClip.validate(loop, known)))
+	end)
+	t.test("leg and root joints are known, root layers on top", function()
+		for _, name in { "RightHip", "RightKnee", "LeftHip", "LeftKnee" } do
+			t.eq(PoseClips.JOINTS[name].mode, "override", name)
+		end
+		t.eq(PoseClips.JOINTS.Root.part, "LowerTorso")
+		t.eq(PoseClips.JOINTS.Root.mode, "add")
+	end)
+	t.test("dodge clips match the dodge timings", function()
+		for _, kind in { "roll", "backstep" } do
+			local move = Dodge.moves[kind]
+			local c = PoseClips.clips[move.clip]
+			t.ok(c, move.clip)
+			t.eq(c.duration, move.duration, move.clip)
+			t.eq(c.loop, nil, move.clip)
+		end
+	end)
+	t.test("dodge_roll is one full forward somersault, low in the middle", function()
+		local c = PoseClips.clips.dodge_roll
+		local last, lowest, lowestAt = 0, 0, 0
+		for i = 0, 110 do
+			local time = i * c.duration / 110
+			local root = PoseClip.sample(c, time).Root
+			t.ok(root[1] <= last + 1e-9, `Root X turns one way only (t = {time})`)
+			last = root[1]
+			local y = root[5] or 0
+			if y < lowest then
+				lowest, lowestAt = y, time
+			end
+		end
+		t.near(last, -360, 1e-9, "ends on a full turn")
+		t.near(lowest, -1.2, 0.05, "rolls about 1.2 studs low")
+		local land = Dodge.moves.roll.land
+		t.ok(lowestAt > 0.1 and lowestAt < land, "lowest in the middle of the roll")
+		-- ease in-out: the middle quarter of the turn is faster than the first
+		local function x(time: number): number
+			return PoseClip.sample(c, time).Root[1]
+		end
+		local start, finish = 0.08, land
+		local q = (finish - start) / 4
+		t.ok(
+			math.abs(x(start + 2 * q) - x(start + q)) > math.abs(x(start + q) - x(start)),
+			"fastest in the middle"
+		)
 	end)
 end

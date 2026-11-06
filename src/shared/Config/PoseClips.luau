@@ -12,9 +12,14 @@
 --   Measured in Studio on the R15 constraint rig (2026-11-06): every sign below holds.
 --   Waist Y+ turns the torso left, Y- right; X+ leans back, X- leans forward.
 --   Neck X+ looks up.
+--   Legs follow the arm axes: Hip X+ swings the thigh forward and up, Knee X- folds the
+--   shin back. Root (HumanoidRootPart -> LowerTorso) X- pitches the whole body forward
+--   around the waist. A pose value may carry an offset in studs after the angles
+--   ({rx, ry, rz, px, py, pz}); for Root, py- lowers the body.
 -- Timings line up with the VFX modules and the server hits (see each comment).
 
 local PoseClip = if script then require(script.Parent.Parent.Logic.PoseClip) else require("../Logic/PoseClip")
+local Dodge = if script then require(script.Parent.Dodge) else require("./Dodge")
 
 type Clip = PoseClip.Clip
 
@@ -31,6 +36,11 @@ PoseClips.JOINTS = {
 	LeftShoulder = { part = "LeftUpperArm", mode = "override" },
 	LeftElbow = { part = "LeftLowerArm", mode = "override" },
 	LeftWrist = { part = "LeftHand", mode = "override" },
+	Root = { part = "LowerTorso", mode = "add" },
+	RightHip = { part = "RightUpperLeg", mode = "override" },
+	RightKnee = { part = "RightLowerLeg", mode = "override" },
+	LeftHip = { part = "LeftUpperLeg", mode = "override" },
+	LeftKnee = { part = "LeftLowerLeg", mode = "override" },
 }
 
 local clips: { [string]: Clip } = {
@@ -806,6 +816,137 @@ clips.boss_defeated = {
 		},
 		{ t = 0.7, pose = KNEEL, ease = "inout" },
 		{ t = 8, pose = nudge(KNEEL, { Waist = { -2, 0, 0 }, Neck = { -2, 0, 0 } }) },
+	},
+}
+
+-- Dodges ---------------------------------------------------------------------------------
+-- Durations and landing times come from Config/Dodge, the same numbers the server uses for
+-- the i-frames and the client uses for the motion.
+
+local ROLL = Dodge.moves.roll
+local BACKSTEP = Dodge.moves.backstep
+
+-- dodge_roll: tuck (thighs to the chest, shins folded, arms hugging the knees, head down),
+-- one forward somersault on Root from the end of the tuck to the landing, then a quick
+-- stand-up. The turn follows smoothstep, so the middle of the roll is fastest; the body
+-- sinks ROLL_LOW studs at the middle so it rolls along the ground, not around the waist.
+local ROLL_TUCK_IN = 0.08
+local ROLL_STAND = ROLL.land + 0.08
+local ROLL_STEPS = 8
+local ROLL_LOW = 1.2
+local ROLL_TUCK_LOW = 0.4
+
+local TUCK: { [string]: { number } } = {
+	Waist = { -35, 0, 0 },
+	Neck = { -40, 0, 0 },
+	RightShoulder = { 65, 0, 10 },
+	LeftShoulder = { 65, 0, -10 },
+	RightElbow = { 110, 0, 0 },
+	LeftElbow = { 110, 0, 0 },
+	RightHip = { 115, 0, 0 },
+	LeftHip = { 115, 0, 0 },
+	RightKnee = { -125, 0, 0 },
+	LeftKnee = { -125, 0, 0 },
+}
+
+local function rollKeys(): { PoseClip.Key }
+	local keys: { PoseClip.Key } = { { t = 0, pose = { Root = { 0, 0, 0 } }, ease = "out" } }
+	for i = 0, ROLL_STEPS do
+		local a = i / ROLL_STEPS
+		local pose = table.clone(TUCK)
+		local turn = a * a * (3 - 2 * a)
+		local sink = ROLL_TUCK_LOW + (ROLL_LOW - ROLL_TUCK_LOW) * math.sin(math.pi * a)
+		pose.Root = { -360 * turn, 0, 0, 0, -sink, 0 }
+		table.insert(keys, {
+			t = ROLL_TUCK_IN + (ROLL.land - ROLL_TUCK_IN) * a,
+			pose = pose,
+			ease = if i == ROLL_STEPS then "out" else nil,
+		})
+	end
+	table.insert(keys, {
+		t = ROLL_STAND,
+		pose = {
+			Root = { -360, 0, 0, 0, -0.15, 0 },
+			Waist = { -10, 0, 0 },
+			RightHip = { 25, 0, 0 },
+			LeftHip = { 25, 0, 0 },
+			RightKnee = { -30, 0, 0 },
+			LeftKnee = { -30, 0, 0 },
+		},
+		ease = "inout",
+	})
+	-- Root stays at -360 (the same as 0) to the end, so the blend-out never turns it back.
+	table.insert(keys, { t = ROLL.duration, pose = { Root = { -360, 0, 0 } } })
+	return keys
+end
+
+clips.dodge_roll = {
+	duration = ROLL.duration,
+	blendIn = 0.05,
+	blendOut = 0.1,
+	keys = rollKeys(),
+}
+
+-- dodge_backstep: a small crouch-hop back. The torso leans forward over bent knees, the
+-- arms flare slightly, the body lifts a little mid-hop and sinks again on landing.
+clips.dodge_backstep = {
+	duration = BACKSTEP.duration,
+	blendIn = 0.04,
+	blendOut = 0.08,
+	keys = {
+		{ t = 0, pose = { Root = { 0, 0, 0 } }, ease = "out" },
+		{
+			t = 0.06,
+			pose = {
+				Root = { 0, 0, 0, 0, -0.45, 0 },
+				Waist = { -14, 0, 0 },
+				Neck = { 8, 0, 0 },
+				RightShoulder = { 25, 0, 28 },
+				LeftShoulder = { 25, 0, -28 },
+				RightElbow = { 30, 0, 0 },
+				LeftElbow = { 30, 0, 0 },
+				RightHip = { 40, 0, 0 },
+				LeftHip = { 40, 0, 0 },
+				RightKnee = { -55, 0, 0 },
+				LeftKnee = { -55, 0, 0 },
+			},
+			ease = "out",
+		},
+		{
+			t = 0.16,
+			pose = {
+				Root = { 0, 0, 0, 0, 0.2, 0 },
+				Waist = { -20, 0, 0 },
+				Neck = { 10, 0, 0 },
+				RightShoulder = { 15, 0, 40 },
+				LeftShoulder = { 15, 0, -40 },
+				RightElbow = { 25, 0, 0 },
+				LeftElbow = { 25, 0, 0 },
+				RightHip = { 30, 0, 0 },
+				LeftHip = { 30, 0, 0 },
+				RightKnee = { -40, 0, 0 },
+				LeftKnee = { -40, 0, 0 },
+			},
+			ease = "inout",
+		},
+		{
+			t = BACKSTEP.land,
+			pose = {
+				Root = { 0, 0, 0, 0, -0.4, 0 },
+				Waist = { -16, 0, 0 },
+				Neck = { 8, 0, 0 },
+				RightShoulder = { 20, 0, 30 },
+				LeftShoulder = { 20, 0, -30 },
+				RightElbow = { 30, 0, 0 },
+				LeftElbow = { 30, 0, 0 },
+				RightHip = { 45, 0, 0 },
+				LeftHip = { 45, 0, 0 },
+				RightKnee = { -60, 0, 0 },
+				LeftKnee = { -60, 0, 0 },
+			},
+			ease = "out",
+		},
+		{ t = BACKSTEP.duration, pose = {} },
 	},
 }
 

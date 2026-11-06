@@ -9,7 +9,10 @@
 --
 -- A model has two layers: a looping idle (a clip with `loop`, such as the boss
 -- stance) and a one-shot on top of it. A new one-shot replaces the current
--- one; when it blends out the idle shows through again, with no pop.
+-- one; when it blends out the idle shows through again, with no pop. The pose
+-- the replaced one-shot had reached is held and faded out over the new clip's
+-- blend-in, so a dodge cutting a sword swing short never snaps a limb (joints
+-- the new clip does not touch fade back to the Animator the same way).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,7 +29,8 @@ type FxEvent = Common.FxEvent
 type Joint = Motor6D | AnimationConstraint
 type Bound = { motor: Joint, additive: boolean }
 type Run = { clip: PoseClip.Clip, started: number }
-type Layers = { idle: Run?, shot: Run?, joints: { [string]: Bound } }
+type Fade = { pose: PoseClip.Pose, weight: number, started: number, length: number }
+type Layers = { idle: Run?, shot: Run?, fade: Fade?, joints: { [string]: Bound } }
 
 local Poses = {}
 
@@ -35,9 +39,12 @@ local connection: RBXScriptConnection? = nil
 
 local RAD = math.pi / 180
 local IDENTITY = CFrame.new()
+local MIN_FADE = 0.05
 
+-- Angles in degrees, then an optional offset in studs (PoseClip position channels).
 local function toCFrame(e: PoseClip.Euler): CFrame
-	return CFrame.fromEulerAnglesXYZ(e[1] * RAD, e[2] * RAD, e[3] * RAD)
+	return CFrame.new(e[4] or 0, e[5] or 0, e[6] or 0)
+		* CFrame.fromEulerAnglesXYZ(e[1] * RAD, e[2] * RAD, e[3] * RAD)
 end
 
 -- Adds the joints a clip touches to the model's bound set.
@@ -68,11 +75,21 @@ local function step()
 			layers.shot = nil
 			shot = nil
 		end
+		local fade = layers.fade
+		local fadeW = 0
+		if fade then
+			fadeW = fade.weight * (1 - (now - fade.started) / fade.length)
+			if fadeW <= 0 then
+				layers.fade = nil
+				fade = nil
+			end
+		end
 		local idle = layers.idle
-		if not shot and not idle then
+		if not shot and not idle and not fade then
 			active[character] = nil
 			continue
 		end
+		local fadePose = fade and fade.pose
 		local idlePose, idleW, shotPose, shotW = nil, 0, nil, 0
 		if idle then
 			local t = now - idle.started
@@ -87,14 +104,18 @@ local function step()
 				continue
 			end
 			local eI = idlePose and idlePose[joint]
+			local eF = fadePose and fadePose[joint]
 			local eS = shotPose and shotPose[joint]
-			if not eI and not eS then
+			if not eI and not eF and not eS then
 				continue
 			end
 			if b.additive then
 				local offset = IDENTITY
 				if eI then
 					offset = IDENTITY:Lerp(toCFrame(eI), idleW)
+				end
+				if eF then
+					offset = offset:Lerp(toCFrame(eF), fadeW)
 				end
 				if eS then
 					offset = offset:Lerp(toCFrame(eS), shotW)
@@ -104,6 +125,9 @@ local function step()
 				local transform = b.motor.Transform
 				if eI then
 					transform = transform:Lerp(toCFrame(eI), idleW)
+				end
+				if eF then
+					transform = transform:Lerp(toCFrame(eF), fadeW)
 				end
 				if eS then
 					transform = transform:Lerp(toCFrame(eS), shotW)
@@ -131,10 +155,24 @@ function Poses.play(character: Model, clipName: string, skip: number?)
 		layers = { joints = {} }
 		active[character] = layers
 	end
-	local run: Run = { clip = clip, started = os.clock() - math.max(skip or 0, 0) }
+	local now = os.clock()
+	local run: Run = { clip = clip, started = now - math.max(skip or 0, 0) }
 	if clip.loop then
 		layers.idle = run
 	else
+		local previous = layers.shot
+		if previous then
+			local t = now - previous.started
+			local weight = PoseClip.weight(previous.clip, t)
+			if weight > 0 then
+				layers.fade = {
+					pose = PoseClip.sample(previous.clip, t),
+					weight = weight,
+					started = now,
+					length = math.max(clip.blendIn, MIN_FADE),
+				}
+			end
+		end
 		layers.shot = run
 	end
 	bind(character, layers, clip)

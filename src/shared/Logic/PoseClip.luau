@@ -1,10 +1,11 @@
 --!strict
--- Procedural pose clips: keyframed joint rotations, sampled over time.
+-- Procedural pose clips: keyframed joint rotations and offsets, sampled over time.
 -- Pure Luau (no Roblox types) so Lune can test it; Client/Vfx/Poses turns the
 -- samples into Motor6D transforms.
 --
--- A clip lists keys in time order. Each key holds Euler angles in degrees per
--- joint ({x, y, z}); a joint missing from a key is at 0 there. `ease` on a key
+-- A clip lists keys in time order. Each key holds, per joint, Euler angles in
+-- degrees ({rx, ry, rz}) and optionally an offset in studs ({rx, ry, rz, px, py, pz}).
+-- A joint missing from a key is at 0 there, and so is a missing offset. `ease` on a key
 -- shapes the segment that STARTS at that key. The clip's weight fades in over
 -- `blendIn` and out over `blendOut`, so it blends with whatever the Animator plays.
 -- A `loop` clip wraps its time, holds weight 1 after its blend-in and never ends;
@@ -19,6 +20,8 @@ export type Clip = { duration: number, blendIn: number, blendOut: number, keys: 
 local PoseClip = {}
 
 local ZERO: Euler = { 0, 0, 0 }
+local ROTATION_ONLY = 3
+local WITH_OFFSET = 6
 
 local function ease(kind: Ease?, a: number): number
 	if kind == "in" then
@@ -71,11 +74,12 @@ function PoseClip.sample(clip: Clip, t: number): Pose
 	end
 	for _, joint in joints do
 		local p, q = a.pose[joint] or ZERO, b.pose[joint] or ZERO
-		out[joint] = {
-			p[1] + (q[1] - p[1]) * alpha,
-			p[2] + (q[2] - p[2]) * alpha,
-			p[3] + (q[3] - p[3]) * alpha,
-		}
+		local e: Euler = table.create(math.max(#p, #q))
+		for c = 1, math.max(#p, #q) do
+			local from = p[c] or 0
+			e[c] = from + ((q[c] or 0) - from) * alpha
+		end
+		out[joint] = e
 	end
 	return out
 end
@@ -102,15 +106,23 @@ function PoseClip.done(clip: Clip, t: number): boolean
 	return not clip.loop and t >= clip.duration
 end
 
+local function sameValue(e: Euler, f: Euler): boolean
+	for c = 1, WITH_OFFSET do
+		if (e[c] or 0) ~= (f[c] or 0) then
+			return false
+		end
+	end
+	return true
+end
+
 local function samePose(a: Pose, b: Pose): boolean
 	for joint, e in a do
-		local f = b[joint] or ZERO
-		if e[1] ~= f[1] or e[2] ~= f[2] or e[3] ~= f[3] then
+		if not sameValue(e, b[joint] or ZERO) then
 			return false
 		end
 	end
 	for joint, f in b do
-		if a[joint] == nil and (f[1] ~= 0 or f[2] ~= 0 or f[3] ~= 0) then
+		if a[joint] == nil and not sameValue(ZERO, f) then
 			return false
 		end
 	end
@@ -135,8 +147,8 @@ function PoseClip.validate(clip: Clip, knownJoints: { [string]: true }): (boolea
 			if not knownJoints[joint] then
 				return false, `key {i}: unknown joint {joint}`
 			end
-			if #e ~= 3 then
-				return false, `key {i}: {joint} needs 3 angles`
+			if #e ~= ROTATION_ONLY and #e ~= WITH_OFFSET then
+				return false, `key {i}: {joint} needs 3 angles, or 3 angles and 3 offsets`
 			end
 		end
 	end
