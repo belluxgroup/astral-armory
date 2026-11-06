@@ -55,8 +55,8 @@ return function(t)
 
 	t.test("displacement sanity check is flat and at most 20 studs", function()
 		t.ok(Rules.withinDisplacement(14, 0))
-		t.ok(Rules.withinDisplacement(12, 16), "exactly 20")
-		t.eq(Rules.withinDisplacement(15, 15), false)
+		t.ok(Rules.withinDisplacement(14.4, 19.2), "exactly 24")
+		t.eq(Rules.withinDisplacement(17, 17), false)
 	end)
 
 	t.test("move numbers follow the spec", function()

@@ -25,8 +25,10 @@ Dodge.cooldown = 0.8
 -- The server accepts a dodge this much early, so network jitter between two presses
 -- exactly one cooldown apart on the client never refuses the second.
 Dodge.cooldownSlack = 0.1
--- After-the-fact sanity check on the server: flat studs moved over one dodge.
-Dodge.maxDisplacement = 20
+-- After-the-fact sanity check on the server: flat studs moved over one dodge. A roll
+-- that carries the held run (Input/Dodge) covers about 16 studs, and the check runs
+-- 0.2 s after the roll, by which time the player has run about 3.6 more.
+Dodge.maxDisplacement = 24
 -- A move direction shorter than this counts as standing still: backstep.
 Dodge.moveThreshold = 0.1
 

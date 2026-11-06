@@ -69,7 +69,10 @@ local function drive(
 	connection = RunService.PreSimulation:Connect(function()
 		local alpha = (os.clock() - started) / move.duration
 		if alpha < 1 and humanoid.Health > 0 and root.Parent ~= nil then
-			velocity.LineVelocity = DodgeConfig.speedAt(kind, alpha)
+			-- Never below the walk the player still holds along the move, so a roll flows
+			-- into the run instead of slowing to a stop and snapping back to WalkSpeed.
+			local carry = math.max(humanoid.MoveDirection:Dot(heading), 0) * humanoid.WalkSpeed
+			velocity.LineVelocity = math.max(DodgeConfig.speedAt(kind, alpha), carry)
 			return
 		end
 		if connection then
