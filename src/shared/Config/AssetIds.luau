@@ -18,6 +18,7 @@ export type TextureName =
 	| "slash_arc"
 	| "beam_core"
 	| "explosion_flipbook_4x4"
+	| "aura_flame"
 
 local SPARKLES = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
@@ -29,11 +30,12 @@ local CUSTOM: { [string]: string } = {
 	-- glow_star = "rbxassetid://",
 	-- spark = "rbxassetid://",
 	-- smoke_soft = "rbxassetid://",
-	-- ring_runes = "rbxassetid://",
+	-- ring_runes = "rbxassetid://", -- prefer assets/textures/hero_ring_runes.png
 	-- hex_cell = "rbxassetid://",
 	-- slash_arc = "rbxassetid://",
 	-- beam_core = "rbxassetid://",
 	-- explosion_flipbook_4x4 = "rbxassetid://",
+	-- aura_flame = "rbxassetid://", -- assets/textures/hero_aura_flame.png
 }
 
 -- Built-in fallbacks. An empty string means "no texture": Beams render as a
@@ -48,6 +50,7 @@ local FALLBACK: { [string]: string } = {
 	slash_arc = "",
 	beam_core = "",
 	explosion_flipbook_4x4 = FIRE,
+	aura_flame = FIRE,
 }
 
 local function resolve(name: string): string
@@ -64,6 +67,7 @@ local AssetIds = {
 	slash_arc = resolve("slash_arc"),
 	beam_core = resolve("beam_core"),
 	explosion_flipbook_4x4 = resolve("explosion_flipbook_4x4"),
+	aura_flame = resolve("aura_flame"),
 }
 
 -- The texture id for `name` (custom when uploaded, built-in fallback otherwise).

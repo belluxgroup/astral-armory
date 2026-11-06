@@ -173,7 +173,7 @@ local function startAura(character: Model, endAt: number): Aura?
 				Color = Common.colors(VfxPalette.named.radiantGold, palette.glow),
 				RotSpeed = NumberRange.new(-120, 120),
 				Brightness = 1.5,
-			}, "smoke_soft"))
+			}, "aura_flame"))
 		end
 	end
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
