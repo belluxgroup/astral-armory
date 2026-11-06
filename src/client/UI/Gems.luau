@@ -141,7 +141,7 @@ function Screen.new(parent: Instance, actions: Actions): Screen
 		FontFace = Theme.fonts.heavy,
 		Position = UDim2.fromOffset(24, 14),
 		Size = UDim2.fromOffset(500, 28),
-		Text = string.upper(Theme.text("gems")),
+		Text = Theme.text("gems"),
 		TextColor3 = colors.gold,
 		TextSize = 22,
 		Parent = panel,
