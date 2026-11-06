@@ -17,7 +17,10 @@ local PoseClips = require(Shared:WaitForChild("Config"):WaitForChild("PoseClips"
 local Common = require(script.Parent.Common)
 
 type FxEvent = Common.FxEvent
-type Bound = { motor: Motor6D, joint: string, additive: boolean }
+-- Classic rigs use Motor6D joints; avatars on the constraint-based joint rig use
+-- AnimationConstraint. Both expose the Animator-driven Transform.
+type Joint = Motor6D | AnimationConstraint
+type Bound = { motor: Joint, joint: string, additive: boolean }
 type Active = { clip: PoseClip.Clip, started: number, bound: { Bound } }
 
 local Poses = {}
@@ -38,8 +41,8 @@ local function bind(character: Model, clip: PoseClip.Clip): { Bound }
 		local info = PoseClips.JOINTS[joint]
 		local part = info and character:FindFirstChild(info.part)
 		local motor = part and part:FindFirstChild(joint)
-		if motor and motor:IsA("Motor6D") then
-			table.insert(out, { motor = motor, joint = joint, additive = info.mode == "add" })
+		if motor and (motor:IsA("Motor6D") or motor:IsA("AnimationConstraint")) then
+			table.insert(out, { motor = motor :: Joint, joint = joint, additive = info.mode == "add" })
 		end
 	end
 	return out
