@@ -142,6 +142,7 @@ function UI.start(): Types.UIHandle
 				Theme.colors.danger
 			)
 		end,
+		flashStamina = hud.flashStamina,
 	}
 	return handle
 end

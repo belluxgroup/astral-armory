@@ -124,6 +124,11 @@ function Input.start(ui: UIHandle)
 			if skill.unlockLevel and state.level < skill.unlockLevel then
 				return
 			end
+			-- basic costs stamina and is refused at 0, the same rule the server applies.
+			if skillId == "basic" and state.stamina <= 0 then
+				ui.flashStamina()
+				return
+			end
 		end
 		-- Client-side throttle only; the server is the authority on cooldowns.
 		if ui.cooldownLeft(skillId) > 0 then

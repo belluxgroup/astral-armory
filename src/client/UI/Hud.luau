@@ -1,5 +1,6 @@
 --!strict
--- Bottom-center HUD: skill hotbar with cooldown sweeps, HP / Energy / XP bars. Top-left: points badge.
+-- Bottom-center HUD: skill hotbar with cooldown sweeps, HP / Energy / Stamina / XP bars.
+-- Top-left: points badge.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -17,9 +18,13 @@ local colors = Theme.colors
 local WIDTH = 460
 local SLOT = 64
 local SLOT_GAP = 14
+local BARS_HEIGHT = 98
 local BOSS_SUMMON_LEVEL = 8 -- spec §4.6: the boss can be summoned from level 8
+local STAMINA_COLOR = Color3.fromHex("5BD08A") -- dodge spec §1
+local FLASH_TIME = 0.12
+local FLASH_REPEATS = 2
 
-export type Hud = { update: (state: PlayerState) -> () }
+export type Hud = { update: (state: PlayerState) -> (), flashStamina: () -> () }
 
 type Deps = {
 	getCooldown: (skillId: string) -> (number, number),
@@ -27,7 +32,7 @@ type Deps = {
 	summonBoss: () -> (),
 }
 
-type Bar = { set: (current: number, max: number, text: string?) -> () }
+type Bar = { set: (current: number, max: number, text: string?) -> (), flash: () -> () }
 
 local function makeBar(parent: Instance, y: number, height: number, color: Color3, textSize: number): Bar
 	local radius = math.floor(height / 2)
@@ -61,13 +66,26 @@ local function makeBar(parent: Instance, y: number, height: number, color: Color
 			),
 		}),
 	})
+	local flashOverlay = make("Frame", {
+		BackgroundColor3 = colors.danger,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Parent = track,
+	}, { Theme.corner(radius) })
+	local flashTween = TweenService:Create(
+		flashOverlay,
+		TweenInfo.new(FLASH_TIME, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, FLASH_REPEATS, true),
+		{ BackgroundTransparency = 0.15 }
+	)
 	local label = Theme.label({
 		Size = UDim2.fromScale(1, 1),
 		TextSize = textSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextStrokeTransparency = 0.6,
 		Text = "",
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = track,
 	})
 
@@ -88,6 +106,12 @@ local function makeBar(parent: Instance, y: number, height: number, color: Color
 				Theme.tween(fill, 0.25, { Size = UDim2.fromScale(fraction, 1) })
 			end
 			shown = fraction
+		end,
+		-- A few quick red blinks, for an action refused for lack of this resource.
+		flash = function()
+			flashTween:Cancel()
+			flashOverlay.BackgroundTransparency = 1
+			flashTween:Play()
 		end,
 	}
 end
@@ -269,7 +293,7 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0.5, 0, 1, -14),
-		Size = UDim2.fromOffset(WIDTH, SLOT + 12 + 82),
+		Size = UDim2.fromOffset(WIDTH, SLOT + 12 + BARS_HEIGHT),
 		Parent = screen,
 	})
 	Theme.autoScale(root)
@@ -295,7 +319,7 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 
 	local bars = Theme.panel({
 		Position = UDim2.fromOffset(0, SLOT + 12),
-		Size = UDim2.new(1, 0, 0, 82),
+		Size = UDim2.new(1, 0, 0, BARS_HEIGHT),
 		Parent = root,
 	})
 	local inner = make("Frame", {
@@ -305,9 +329,10 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 	}, { Theme.padding(10) })
 	local hpBar = makeBar(inner, 0, 20, colors.hp, 13)
 	local energyBar = makeBar(inner, 26, 16, colors.energy, 12)
+	local staminaBar = makeBar(inner, 46, 12, STAMINA_COLOR, 10)
 
 	local levelLabel = Theme.label({
-		Position = UDim2.fromOffset(0, 46),
+		Position = UDim2.fromOffset(0, 62),
 		Size = UDim2.fromOffset(70, 16),
 		FontFace = Theme.fonts.heavy,
 		Text = Theme.textWith("level", 1),
@@ -318,7 +343,7 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 	local levelPop = make("UIScale", { Parent = levelLabel })
 	local xpHolder = make("Frame", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(76, 50),
+		Position = UDim2.fromOffset(76, 66),
 		Size = UDim2.new(1, -76, 0, 8),
 		Parent = inner,
 	})
@@ -430,6 +455,11 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 			state.maxEnergy,
 			`{math.floor(state.energy)} / {math.floor(state.maxEnergy + 0.5)}`
 		)
+		staminaBar.set(
+			state.stamina,
+			state.maxStamina,
+			`{math.floor(state.stamina)} / {math.floor(state.maxStamina + 0.5)}`
+		)
 		xpBar.set(state.xp, state.xpToNext)
 
 		if state.level ~= lastLevel then
@@ -464,7 +494,7 @@ function Hud.new(parent: Instance, deps: Deps): Hud
 		end
 	end
 
-	return { update = update }
+	return { update = update, flashStamina = staminaBar.flash }
 end
 
 return Hud

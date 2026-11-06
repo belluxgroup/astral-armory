@@ -23,6 +23,8 @@ export type UIHandle = {
 	cooldownLeft: (skillId: string) -> number,
 	setActions: (actions: Actions) -> (),
 	toast: (stringKey: string) -> (),
+	-- Blinks the stamina bar: an action was refused for lack of stamina.
+	flashStamina: () -> (),
 }
 
 -- Sockets are dense arrays with `false` for an empty slot (see Net.PlayerState).

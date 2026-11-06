@@ -1,7 +1,8 @@
 --!strict
--- CombatService (spec §5.7): CastSkill validation, cooldowns, Energy regen, hex_aegis absorb,
--- ascension, hit detection, damage, elements (burn, slow, chain) and the SkillFx and
--- DamagePopup broadcasts. All numbers come from SkillResolver; nothing from the client is trusted.
+-- CombatService (spec §5.7): CastSkill validation, cooldowns, Energy and stamina regen,
+-- hex_aegis absorb, ascension, hit detection, damage, elements (burn, slow, chain) and the
+-- SkillFx and DamagePopup broadcasts. All numbers come from SkillResolver; nothing from the
+-- client is trusted.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -11,9 +12,11 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Skills = require(Shared.Config.Skills)
 local Gems = require(Shared.Config.Gems)
+local DodgeConfig = require(Shared.Config.Dodge)
 local Stats = require(Shared.Logic.Stats)
 local SkillResolver = require(Shared.Logic.SkillResolver)
 local Damage = require(Shared.Logic.Damage)
+local Stamina = require(Shared.Logic.Stamina)
 local BladeLayout = require(Shared.Logic.BladeLayout)
 local SwordModel = require(Shared.Models.SwordModel)
 
@@ -31,6 +34,7 @@ type Live = {
 	player: Player,
 	stats: Stats.Stats,
 	energy: number,
+	stamina: Stamina.State,
 	cooldowns: { [string]: number },
 	transformed: boolean,
 	transformEndsAt: number?,
@@ -341,6 +345,7 @@ local function recompute(live: Live)
 	end
 	live.stats = Stats.compute(profile.level, profile.allocated, { transformed = live.transformed })
 	live.energy = math.min(live.energy, live.stats.maxEnergy)
+	live.stamina.value = math.min(live.stamina.value, live.stats.maxStamina)
 	applyStatsToCharacter(live)
 	PlayerData.onChanged(live.player)
 end
@@ -363,6 +368,8 @@ function Combat.getLive(player: Player): PlayerData.LiveFields?
 		maxHp = live.stats.maxHp,
 		energy = live.energy,
 		maxEnergy = live.stats.maxEnergy,
+		stamina = live.stamina.value,
+		maxStamina = live.stats.maxStamina,
 		cooldowns = live.cooldowns,
 		transformed = live.transformed,
 		transformEndsAt = live.transformEndsAt,
@@ -442,6 +449,7 @@ local function setupCharacter(live: Live, character: Model)
 	end
 	recompute(live)
 	live.energy = live.stats.maxEnergy
+	live.stamina = Stamina.new(live.stats.maxStamina)
 	humanoid.MaxHealth = live.stats.maxHp
 	humanoid.Health = live.stats.maxHp
 	humanoid.WalkSpeed = live.stats.moveSpeed
@@ -474,6 +482,7 @@ local function createLive(player: Player, profile: ProfileRules.Profile)
 		player = player,
 		stats = Stats.compute(profile.level, profile.allocated, { transformed = false }),
 		energy = 0,
+		stamina = Stamina.new(0),
 		cooldowns = {},
 		transformed = false,
 		transformEndsAt = nil,
@@ -489,6 +498,7 @@ local function createLive(player: Player, profile: ProfileRules.Profile)
 		characterConnections = {},
 	}
 	live.energy = live.stats.maxEnergy
+	live.stamina = Stamina.new(live.stats.maxStamina)
 	lives[player] = live
 	table.insert(
 		live.connections,
@@ -741,9 +751,16 @@ local function onCast(player: Player, skillId: unknown, aim: unknown)
 	if not Cooldowns.ready(live.cooldowns, id, now) then
 		return
 	end
+	-- basic costs stamina (dodge spec §1); skills cost none.
+	if id == "basic" and not Stamina.canSpend(live.stamina) then
+		return
+	end
 	local spec = SkillResolver.resolve(id, ProfileRules.gemIds(profile, id), live.stats, live.transformed)
 	if not pay(live, spec) then
 		return
+	end
+	if id == "basic" then
+		Stamina.spend(live.stamina, DodgeConfig.basicStaminaCost, now)
 	end
 	Cooldowns.start(live.cooldowns, id, now, spec.cooldown)
 
@@ -796,12 +813,15 @@ end
 local function onHeartbeat(dt: number)
 	local now = os.clock()
 	for player, live in lives do
-		local before = live.energy
+		local before, staminaBefore = live.energy, live.stamina.value
 		if live.transformed and live.drainPerSec then
 			-- radiant_mind: the drain replaces regen, so the form ends when Energy runs out.
 			live.energy = math.max(0, live.energy - live.drainPerSec * dt)
 		elseif isAlive(live) then
 			live.energy = math.min(live.stats.maxEnergy, live.energy + live.stats.energyRegen * dt)
+		end
+		if isAlive(live) then
+			Stamina.regen(live.stamina, live.stats.maxStamina, live.stats.staminaRegen, now, dt)
 		end
 		if live.transformed then
 			local expired = live.transformEndsAt ~= nil and now >= live.transformEndsAt
@@ -813,7 +833,7 @@ local function onHeartbeat(dt: number)
 		if live.absorb > 0 and now >= live.absorbEndsAt then
 			live.absorb = 0
 		end
-		if live.energy ~= before then
+		if live.energy ~= before or live.stamina.value ~= staminaBefore then
 			PlayerData.onChanged(player)
 		end
 	end
