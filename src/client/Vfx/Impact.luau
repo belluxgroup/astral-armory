@@ -225,6 +225,7 @@ export type ShockwaveOpts = {
 	startScale: number?, -- starting fraction of the radius (default 0.05)
 	brightness: number?,
 	transparency: number?, -- starting transparency (default 0)
+	normal: Vector3?, -- ring plane normal (default up: a ground ring)
 }
 
 -- An expanding ring (Quart Out) with an optional floor disc, fading out.
@@ -237,7 +238,8 @@ function Impact.shockwave(
 )
 	local o: ShockwaveOpts = opts or {}
 	local fx = Common.effect("Shockwave", duration)
-	local cf = CFrame.new(position + Vector3.new(0, 0.2, 0))
+	local normal = o.normal or Vector3.yAxis
+	local cf = Common.upFrame(position + normal * 0.2, normal)
 	local width = o.width or math.max(radius * 0.08, 0.4)
 	local startScale = o.startScale or 0.05
 	local startT = o.transparency or 0
