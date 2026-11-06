@@ -121,7 +121,7 @@ selene src
 | ![Phone HUD with touch buttons](docs/screenshots/15-phone-hud-touch.png) | ![Passive tree on a phone](docs/screenshots/16-phone-passive-tree.png) |
 | ![Golden Tyrant idle, armor and halo](docs/screenshots/21-boss-idle-armor.png) | ![Golden Tyrant chains](docs/screenshots/22-boss-chains.png) |
 | ![Golden Tyrant armory in phase 2](docs/screenshots/23-boss-armory-phase2.png) | ![Golden Tyrant ultimate](docs/screenshots/24-boss-ultimate.png) |
-| ![Golden Tyrant defeated](docs/screenshots/25-boss-defeated.png) | |
+| ![Golden Tyrant defeated](docs/screenshots/25-boss-defeated.png) | ![Dodge roll, three frames of the somersault](docs/screenshots/26-dodge-roll.png) |
 
 ## Docs
 
