@@ -226,13 +226,21 @@ local function scheduleImpacts(
 	delay: number,
 	interval: number,
 	radius: number,
-	damage: number
+	damage: number,
+	maxHitsPerPlayer: number
 )
+	-- Hits are counted per player for the whole salvo, so standing still is punished
+	-- but never deleted by every weapon at once.
+	local hits: { [Player]: number } = {}
 	for i, position in targets do
 		task.delay(delay + (i - 1) * interval, function()
 			if state.alive then
 				for _, entry in playersInArea(position, radius) do
-					Combat.damagePlayer(entry.player, damage)
+					local taken = hits[entry.player] or 0
+					if taken < maxHitsPerPlayer then
+						hits[entry.player] = taken + 1
+						Combat.damagePlayer(entry.player, damage)
+					end
 				end
 			end
 		end)
@@ -374,7 +382,10 @@ local function melee(state: State, target: Target, windup: number)
 	end
 	local frame = CFrame.lookAt(origin, origin + dir)
 	for _, entry in playersInBox(frame, cfg.length, cfg.width, cfg.height) do
-		Combat.damagePlayer(entry.player, cfg.damage)
+		-- a pillar or wall between the blade and the player blocks the cut
+		if not sightBlocked(origin, entry.root.Position) then
+			Combat.damagePlayer(entry.player, cfg.damage)
+		end
 	end
 	waitAlive(state, MELEE_RECOVER)
 end
@@ -406,7 +417,7 @@ local function volley(state: State, target: Target)
 		delay = cfg.delay,
 		interval = cfg.interval,
 	})
-	scheduleImpacts(state, targets, cfg.delay, cfg.interval, cfg.radius, cfg.damage)
+	scheduleImpacts(state, targets, cfg.delay, cfg.interval, cfg.radius, cfg.damage, cfg.maxHitsPerPlayer)
 end
 
 local function armory(state: State, target: Target)
@@ -443,7 +454,15 @@ local function armory(state: State, target: Target)
 		interval = cfg.interval,
 		telegraph = cfg.telegraph,
 	})
-	scheduleImpacts(state, targets, cfg.delay, cfg.interval, cfg.radius, cfg.damage)
+	scheduleImpacts(
+		state,
+		targets,
+		cfg.delay,
+		cfg.interval,
+		cfg.radius,
+		cfg.damage,
+		cfg.maxHitsPerPlayer[phaseIndex(state)]
+	)
 	-- stand while the portals open, then walk on as the weapons land
 	waitAlive(state, cfg.delay)
 end

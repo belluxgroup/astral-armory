@@ -150,6 +150,7 @@ local eclipseWarden: EclipseWarden = {
 		radius = 3,
 		damage = 12,
 		jitter = 1.5,
+		maxHitsPerPlayer = 2, -- one player standing still takes at most this many weapons per volley
 	},
 	-- a fan of portals; weapon i lands at delay + (i - 1) * interval, its line telegraph
 	-- shows for `telegraph` before that
@@ -162,6 +163,7 @@ local eclipseWarden: EclipseWarden = {
 		radius = 4,
 		damage = 18,
 		scatter = 5,
+		maxHitsPerPlayer = { 3, 4 }, -- per armory salvo, by phase
 		fanRadius = 9,
 		fanArc = 160,
 	},

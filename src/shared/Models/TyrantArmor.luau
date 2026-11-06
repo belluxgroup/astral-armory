@@ -21,12 +21,13 @@ TyrantArmor.FOLDER_NAME = "TyrantArmor"
 TyrantArmor.PART_BUDGET = 140
 
 TyrantArmor.COLORS = {
-	gold = Color3.fromHex("E8B84A"),
-	goldDeep = Color3.fromHex("A9792C"),
+	-- Pale, slightly cool gold: the warm sunset grade pushes deeper golds toward copper.
+	gold = Color3.fromHex("F0CF63"),
+	goldDeep = Color3.fromHex("B8892F"),
 	obsidian = Color3.fromHex("1A1420"),
 	crimson = Color3.fromHex("8E1B24"),
 	crimsonInner = Color3.fromHex("450C14"),
-	skin = Color3.fromHex("D9A27C"),
+	skin = Color3.fromHex("C99A6E"),
 	eye = Color3.fromHex("FF2440"),
 	eyeEnraged = Color3.fromHex("FF8A6A"),
 	edge = Color3.fromHex("FFE6A0"),
@@ -47,7 +48,7 @@ TyrantArmor.NAMES = {
 local C = TyrantArmor.COLORS
 local N = TyrantArmor.NAMES
 
-local GOLD_REFLECT = 0.2
+local GOLD_REFLECT = 0.35
 local CAPE_TILT = math.rad(-10)
 local rad = math.rad
 
