@@ -322,7 +322,11 @@ local function stepAll(dt: number)
 			local elapsed = now - fx.started
 			local steps = fx.steps
 			for j = #steps, 1, -1 do
-				local ok, doneOrErr = pcall(steps[j], dt, elapsed)
+				local step = steps[j]
+				if fx.dead or step == nil then
+					break
+				end
+				local ok, doneOrErr = pcall(step, dt, elapsed)
 				if not ok then
 					warn(`[Vfx] {fx.name} step error: {doneOrErr}`)
 					table.remove(steps, j)
@@ -379,6 +383,9 @@ function Effect.attachment(self: Effect, parent: BasePart?, cf: CFrame?): Attach
 	if parent then
 		a.CFrame = cf or CFrame.identity
 		a.Parent = parent
+		if not parent:IsDescendantOf(self.folder) then
+			self:own(a)
+		end
 	else
 		a.Parent = workspace.Terrain
 		a.WorldCFrame = cf or CFrame.identity
