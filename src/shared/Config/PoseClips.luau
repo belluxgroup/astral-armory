@@ -4,6 +4,12 @@
 --   Shoulder X+ raises the arm forward/up, X- swings it back; Z+ lifts the RIGHT arm
 --   outward, Z- lifts the LEFT arm outward; Y twists the arm.
 --   Elbow / Wrist X+ bends forward.
+--   The sword sits across the palm (blade along the hand's forward axis), so with the
+--   arm raised the blade points up. RightWrist X around -80 lines the blade up with the
+--   arm, which is what a cut or a raised sword needs. Z is applied first, then Y, then X
+--   (CFrame.fromEulerAnglesXYZ), so a big X on top of a big Z swings the arm sideways,
+--   not up: "arms up and out" is Z +-120 with X near 0.
+--   Measured in Studio on the R15 constraint rig (2026-11-06): every sign below holds.
 --   Waist Y+ turns the torso left, Y- right; X+ leans back, X- leans forward.
 --   Neck X+ looks up.
 -- Timings line up with the VFX modules and the server hits (see each comment).
@@ -51,14 +57,19 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 75, 30, -55 },
 					RightElbow = { 10, 0, 0 },
-					RightWrist = { 0, 0, 30 },
+					RightWrist = { -80, -45, 0 },
 					Waist = { -8, 32, 0 },
 				},
 				ease = "inout",
 			},
 			{
 				t = 0.2,
-				pose = { RightShoulder = { 62, 30, -60 }, RightElbow = { 15, 0, 0 }, Waist = { -10, 36, 0 } },
+				pose = {
+					RightShoulder = { 62, 30, -60 },
+					RightElbow = { 15, 0, 0 },
+					RightWrist = { -80, -45, 0 },
+					Waist = { -10, 36, 0 },
+				},
 			},
 			{ t = 0.34, pose = { RightShoulder = { 35, 0, 0 } } },
 		},
@@ -69,10 +80,19 @@ local clips: { [string]: Clip } = {
 		blendIn = 0.03,
 		blendOut = 0.12,
 		keys = {
-			{ t = 0, pose = { RightShoulder = { 62, 30, -60 }, Waist = { -6, 30, 0 } }, ease = "out" },
+			{
+				t = 0,
+				pose = { RightShoulder = { 62, 30, -60 }, RightWrist = { -80, 30, 0 }, Waist = { -6, 30, 0 } },
+				ease = "out",
+			},
 			{
 				t = 0.05,
-				pose = { RightShoulder = { 55, 35, -75 }, RightElbow = { 40, 0, 0 }, Waist = { -6, 38, 0 } },
+				pose = {
+					RightShoulder = { 55, 75, -75 },
+					RightElbow = { 40, 0, 0 },
+					RightWrist = { -80, 0, 0 },
+					Waist = { -6, 38, 0 },
+				},
 				ease = "out",
 			},
 			{
@@ -102,6 +122,7 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 90, -40, 70 },
 					RightElbow = { 20, 0, 0 },
+					RightWrist = { -60, -15, 0 },
 					LeftShoulder = { 55, 0, -30 },
 					Waist = { 4, -50, 0 },
 					Neck = { 0, 22, 0 },
@@ -113,6 +134,7 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 90, 50, -40 },
 					RightElbow = { 5, 0, 0 },
+					RightWrist = { -80, -45, 0 },
 					LeftShoulder = { 35, 0, -60 },
 					Waist = { -10, 55, 0 },
 					Neck = { 0, -25, 0 },
@@ -124,6 +146,7 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 85, 55, -45 },
 					RightElbow = { 10, 0, 0 },
+					RightWrist = { -80, -45, 0 },
 					LeftShoulder = { 30, 0, -55 },
 					Waist = { -12, 58, 0 },
 					Neck = { 0, -25, 0 },
@@ -145,6 +168,7 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 165, 0, 20 },
 					RightElbow = { 10, 0, 0 },
+					RightWrist = { -80, 15, 0 },
 					LeftShoulder = { 30, 0, -25 },
 					Waist = { 12, 0, 0 },
 					Neck = { 25, 0, 0 },
@@ -156,6 +180,7 @@ local clips: { [string]: Clip } = {
 				pose = {
 					RightShoulder = { 172, 0, 14 },
 					RightElbow = { 6, 0, 0 },
+					RightWrist = { -80, 15, 0 },
 					LeftShoulder = { 34, 0, -28 },
 					Waist = { 15, 0, 0 },
 					Neck = { 28, 0, 0 },
@@ -166,6 +191,7 @@ local clips: { [string]: Clip } = {
 				t = 0.7,
 				pose = {
 					RightShoulder = { 70, 0, -5 },
+					RightWrist = { -80, 0, 0 },
 					LeftShoulder = { 20, 0, -20 },
 					Waist = { -10, 0, 0 },
 					Neck = { -5, 0, 0 },
@@ -326,8 +352,9 @@ local clips: { [string]: Clip } = {
 			{
 				t = 0.38,
 				pose = {
-					RightShoulder = { 135, 0, 70 },
-					LeftShoulder = { 135, 0, -70 },
+					RightShoulder = { -30, 0, 120 },
+					LeftShoulder = { -30, 0, -120 },
+					RightWrist = { -80, 0, 0 },
 					RightElbow = { 0, 0, 0 },
 					LeftElbow = { 0, 0, 0 },
 					Waist = { 20, 0, 0 },
@@ -338,8 +365,9 @@ local clips: { [string]: Clip } = {
 			{
 				t = 0.9,
 				pose = {
-					RightShoulder = { 130, 0, 68 },
-					LeftShoulder = { 130, 0, -68 },
+					RightShoulder = { -25, 0, 115 },
+					LeftShoulder = { -25, 0, -115 },
+					RightWrist = { -80, 0, 0 },
 					Waist = { 18, 0, 0 },
 					Neck = { 22, 0, 0 },
 				},
