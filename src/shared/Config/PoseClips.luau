@@ -830,13 +830,17 @@ local BACKSTEP = Dodge.moves.backstep
 
 -- dodge_roll: tuck (thighs to the chest, shins folded, arms hugging the knees, head down),
 -- one forward somersault on Root from the end of the tuck to the landing, then a quick
--- stand-up. The turn follows smoothstep, so the middle of the roll is fastest; the body
--- sinks ROLL_LOW studs at the middle so it rolls along the ground, not around the waist.
+-- stand-up. The turn follows smoothstep, so the middle of the roll is fastest.
 local ROLL_TUCK_IN = 0.08
 local ROLL_STAND = ROLL.land + 0.08
 local ROLL_STEPS = 8
-local ROLL_LOW = 1.2
-local ROLL_TUCK_LOW = 0.4
+-- Root height offset at each of the ROLL_STEPS + 1 somersault keys, so the lowest part of
+-- the tucked body just touches the floor. Root turns about the waist, so the head and
+-- torso swing below the floor mid-turn (lift up there) and the folded legs ride high
+-- near the end (drop down there). Measured in Studio on an R15 avatar: a single sink
+-- curve pushed the torso up to 1.9 studs into the floor, and the physics shoved the
+-- whole character 2.9 studs into the air.
+local ROLL_LIFT = { -1.0, -0.75, -0.55, 0.85, 0.65, -1.3, -1.5, -1.1, -1.0 }
 
 local TUCK: { [string]: { number } } = {
 	Waist = { -35, 0, 0 },
@@ -849,6 +853,8 @@ local TUCK: { [string]: { number } } = {
 	LeftHip = { 115, 0, 0 },
 	RightKnee = { -125, 0, 0 },
 	LeftKnee = { -125, 0, 0 },
+	-- tucks the blade across the back instead of 1.5 studs over the head
+	RightWrist = { 45, 45, 0 },
 }
 
 local function rollKeys(): { PoseClip.Key }
@@ -857,8 +863,7 @@ local function rollKeys(): { PoseClip.Key }
 		local a = i / ROLL_STEPS
 		local pose = table.clone(TUCK)
 		local turn = a * a * (3 - 2 * a)
-		local sink = ROLL_TUCK_LOW + (ROLL_LOW - ROLL_TUCK_LOW) * math.sin(math.pi * a)
-		pose.Root = { -360 * turn, 0, 0, 0, -sink, 0 }
+		pose.Root = { -360 * turn, 0, 0, 0, ROLL_LIFT[i + 1], 0 }
 		table.insert(keys, {
 			t = ROLL_TUCK_IN + (ROLL.land - ROLL_TUCK_IN) * a,
 			pose = pose,

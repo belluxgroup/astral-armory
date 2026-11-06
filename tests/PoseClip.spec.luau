@@ -201,9 +201,9 @@ return function(t)
 			t.eq(c.loop, nil, move.clip)
 		end
 	end)
-	t.test("dodge_roll is one full forward somersault, low in the middle", function()
+	t.test("dodge_roll is one full forward somersault that hugs the floor", function()
 		local c = PoseClips.clips.dodge_roll
-		local last, lowest, lowestAt = 0, 0, 0
+		local last, lowest, lowestAt, highest = 0, 0, 0, 0
 		for i = 0, 110 do
 			local time = i * c.duration / 110
 			local root = PoseClip.sample(c, time).Root
@@ -213,9 +213,13 @@ return function(t)
 			if y < lowest then
 				lowest, lowestAt = y, time
 			end
+			highest = math.max(highest, y)
 		end
 		t.near(last, -360, 1e-9, "ends on a full turn")
-		t.near(lowest, -1.2, 0.05, "rolls about 1.2 studs low")
+		-- head-down the torso swings below the waist pivot, so Root lifts; with the legs
+		-- high near the end it drops (measured profile, see ROLL_LIFT)
+		t.ok(highest > 0.5, "lifts while head-down")
+		t.near(lowest, -1.5, 0.05, "drops about 1.5 studs while the legs ride high")
 		local land = Dodge.moves.roll.land
 		t.ok(lowestAt > 0.1 and lowestAt < land, "lowest in the middle of the roll")
 		-- ease in-out: the middle quarter of the turn is faster than the first
