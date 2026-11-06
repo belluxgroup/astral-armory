@@ -699,12 +699,13 @@ export type FlashOpts = {
 	attack: number?, -- fade-in time before the fade-out (default 0)
 	position: Vector3?,
 	casterUserId: number?,
+	radius: number?, -- gate radius around `position` (default 30)
 }
 
 -- A fullscreen color flash that fades out over `duration`. Gated like shake.
 function Common.flash(color: Color3, duration: number, opts: FlashOpts?)
 	local o: FlashOpts = opts or {}
-	if not Common.isNear(o.position, o.casterUserId) then
+	if not Common.isNear(o.position, o.casterUserId, o.radius) then
 		return
 	end
 	local frame = getFlashFrame()

@@ -277,4 +277,57 @@ function Impact.shockwave(
 	end)
 end
 
+-- A vertical pillar of light: three camera-facing Beam layers and a glowing
+-- core column that snap open, hold, then narrow and fade over `duration`.
+function Impact.pillar(position: Vector3, height: number, width: number, palette: Palette, duration: number)
+	local fx = Common.effect("Pillar", duration)
+	local base = fx:attachment(nil, CFrame.new(position))
+	local top = fx:attachment(nil, CFrame.new(position + Vector3.new(0, height, 0)))
+	local layers = {
+		{ w = width, alpha = 0.72, color = palette.glow, bright = 1.5 },
+		{ w = width * 0.5, alpha = 0.35, color = palette.glow:Lerp(palette.core, 0.5), bright = 2.5 },
+		{ w = width * 0.16, alpha = 0, color = palette.core, bright = 4 },
+	}
+	local beams: { Beam } = {}
+	for i, layer in layers do
+		beams[i] = fx:beam(base, top, {
+			Width0 = 0,
+			Width1 = 0,
+			Color = ColorSequence.new(layer.color),
+			Transparency = Common.seq({ { 0, layer.alpha }, { 0.8, layer.alpha }, { 1, 1 } }),
+			Brightness = layer.bright * palette.brightness,
+			TextureMode = Enum.TextureMode.Wrap,
+			TextureLength = 12,
+			TextureSpeed = -2 - i,
+			Segments = 1,
+			ZOffset = i * 0.1,
+		})
+	end
+	local column = fx:part({
+		Shape = Enum.PartType.Cylinder,
+		Color = palette.core,
+		Transparency = 0.5,
+		Size = Vector3.new(height, 0.1, 0.1),
+		CFrame = CFrame.new(position + Vector3.new(0, height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+	})
+	local holder = fx:part({ CFrame = CFrame.new(position + Vector3.new(0, 4, 0)) })
+	local light = fx:light(holder, { Color = palette.glow, Range = 40, Brightness = 8 * palette.brightness })
+	fx:onStep(function(_dt, elapsed)
+		local t = math.clamp(elapsed / duration, 0, 1)
+		local open = math.clamp(elapsed / 0.08, 0, 1)
+		local close = math.clamp((t - 0.45) / 0.55, 0, 1)
+		local w = (1 - (1 - open) ^ 2) * (1 - close ^ 1.5)
+		for i, b in beams do
+			local lw = layers[i].w * w
+			b.Width0 = lw * 1.15
+			b.Width1 = lw * 0.6
+		end
+		local cw = math.max(width * 0.12 * w, 0.05)
+		column.Size = Vector3.new(height, cw, cw)
+		column.Transparency = 0.5 + 0.5 * close
+		light.Brightness = 8 * palette.brightness * (1 - t)
+		return t >= 1
+	end)
+end
+
 return Impact
