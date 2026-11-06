@@ -25,10 +25,11 @@ Record in Roblox Studio with OBS at 1920×1080, 60 fps. Open `AstralArmory.rbxl`
 | 0:35–0:41 | Open P. Click two nodes along one path, hover a notable. | Fixed, UI only. | The passive tree, learning nodes, the tooltip, the points counter. |
 | 0:41–0:46 | Open G. Click Băng, then a Q socket. Close G, cast Q. | Fixed on the UI, then the same framing as the 0:14 shot. | Support gems change the skill: the blades turn blue and the ground frosts. |
 | 0:46–0:52 | At level 10, press T, then cast Q and R during the transform. | Low front view on T, then pull back for the skills. | Ascension: the aura and the radiant gold variants. |
-| 0:52–0:56 | Walk up the boss dais and press B. | Low, behind the player, the altar in the center. | The summon at the altar. The boss appears. |
-| 0:56–1:03 | Fight phase 1: dodge a slam out of its red circle, hit back with E and R. | Wide, high enough to see the whole telegraph. | Telegraphs and readable boss attacks. |
-| 1:03–1:10 | Below 50% HP: enrage, shadow blades fall. Keep fighting. | Wide, then push in on the boss's enrage aura. | Phase 2: enrage aura and the blade telegraphs. |
-| 1:10–1:13 | Land the killing blow with R or Q. | Close on the boss. | The defeat burst and the light pillar. |
+| 0:52–0:56 | Walk up the boss dais and press B. | Low, behind the player, the altar in the center. | The summon. Bạo Quân Hoàng Kim appears in gold armor, cape, crown and halo, then settles into the idle stance. The boss bar fades in. |
+| 0:56–1:01 | Phase 1: roll (Left Shift) through an armory salvo and roll out of a chains ring before it closes. | Wide and high enough to see the fan of portals and the line telegraphs. | Portal weapons, readable telegraphs, i-frame rolls, the green stamina bar draining. |
+| 1:01–1:05 | Hit back with E and R. Let the boss bar's pale damage-lag layer catch up. | Side view with the boss bar in frame. | Damage numbers and the soulslike boss bar. |
+| 1:05–1:10 | Below 50%: enrage. When the 3-segment blade charges, either hide behind a pillar or roll through the spiral beam at the last moment. | Push in on the charge, then pull wide for the beam. | Phase 2 aura, the ultimate's spiral wind and beam, the safe zone or a perfect dodge. |
+| 1:10–1:13 | Land the killing blow with R or Q. | Close on the boss. | The kneel, the gold dissolve and the light pillar. |
 | 1:13–1:15 | End card: "Luau · Rojo · Lune tests · server-authoritative" and the GitHub link. | Hold on the arena from above. | Tech summary and where to read the code. |
 
 ## Tips
@@ -36,5 +37,6 @@ Record in Roblox Studio with OBS at 1920×1080, 60 fps. Open `AstralArmory.rbxl`
 - Do the boss shots with full Energy. Cast T just before B so the fight uses the radiant variants.
 - If the knights get in the way of a skill shot, wait 8 s for them to respawn in their rings, then pull a
   group of 3 or 4.
-- The boss has 4,000 HP. A full fight at level 10 takes about two minutes, so keep the best 17 s.
+- The boss has 4,000 HP. A full fight at level 10 takes about two minutes, so keep the best 21 s.
+- For the dodge shots, keep stamina above 22 before each roll (a roll costs 22, it refills at 35/s after 0.7 s).
 - For the passive tree shot, press Đặt lại (Reset) first so the path starts from the center.
