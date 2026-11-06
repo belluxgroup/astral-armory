@@ -36,6 +36,7 @@ export type SkillSpec = {
 	length: number?,
 	width: number?,
 	speed: number?,
+	channel: number?,
 	duration: number?,
 	absorb: number?,
 	element: Element,
