@@ -54,7 +54,9 @@ export type PlayerState = {
 	points: number,
 	allocated: { [string]: true },
 	gems: { GemInstance },
-	sockets: { [string]: { [number]: GemInstance? } },
+	-- skillId -> slot -> gem. Each socketed skill is a dense array of its slots, with `false`
+	-- for an empty slot, because remotes truncate arrays at the first nil. Test with `if gem then`.
+	sockets: { [string]: { GemInstance | false } },
 	hp: number,
 	maxHp: number,
 	energy: number,
@@ -143,7 +145,7 @@ function Net.server(): Remotes
 	end
 	assert(folder, "Net: Remotes folder missing")
 	local remotes: Remotes = {}
-	for _, name in Net.names do
+	for _, name in Net.names :: { [string]: string } do
 		local existing = folder:FindFirstChild(name)
 		if existing and existing:IsA("RemoteEvent") then
 			remotes[name] = existing
@@ -168,7 +170,7 @@ function Net.client(): Remotes
 		error(`Net: missing ReplicatedStorage.{FOLDER_NAME}`)
 	end
 	local remotes: Remotes = {}
-	for _, name in Net.names do
+	for _, name in Net.names :: { [string]: string } do
 		local remote = folder:WaitForChild(name, WAIT_TIMEOUT)
 		if not remote or not remote:IsA("RemoteEvent") then
 			error(`Net: missing remote {name}`)
