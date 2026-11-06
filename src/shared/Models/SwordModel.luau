@@ -186,24 +186,32 @@ function SwordModel.build(bladeOnly: boolean?): Model
 	return model
 end
 
--- Welds a sword built by `build()` into a character's hand so the blade points
+-- Attaches a sword built by `build()` to a character's hand so the blade points
 -- forward. Uses the hand's RightGripAttachment when present (R15), otherwise a
--- matching fixed offset. Returns the Weld.
-function SwordModel.weld(sword: Model, hand: BasePart): Weld
+-- matching fixed offset. A RigidConstraint, not a Weld: on avatars with the
+-- constraint-based joint rig a legacy Weld to the hand does not hold and the
+-- sword falls out of the world. Returns the RigidConstraint.
+function SwordModel.weld(sword: Model, hand: BasePart): RigidConstraint
 	local handle = sword.PrimaryPart
 	assert(handle, "SwordModel.weld: sword has no PrimaryPart")
+	local grip = handle:FindFirstChild("Grip") :: Attachment
 	local gripAtt = hand:FindFirstChild("RightGripAttachment")
-	local weld = Instance.new("Weld")
-	weld.Name = "SwordWeld"
-	weld.Part0 = hand
-	weld.Part1 = handle
-	weld.C0 = if gripAtt and gripAtt:IsA("Attachment")
-		then gripAtt.CFrame
-		else CFrame.new(0, -0.25, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
-	weld.C1 = CFrame.identity
-	weld.Parent = handle
+	if not (gripAtt and gripAtt:IsA("Attachment")) then
+		local att = Instance.new("Attachment")
+		att.Name = "SwordGripAttachment"
+		att.CFrame = CFrame.new(0, -0.25, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+		att.Parent = hand
+		gripAtt = att
+	end
+	local att0 = gripAtt :: Attachment
+	sword:PivotTo(att0.WorldCFrame * grip.CFrame:Inverse())
+	local rigid = Instance.new("RigidConstraint")
+	rigid.Name = "SwordWeld"
+	rigid.Attachment0 = att0
+	rigid.Attachment1 = grip
+	rigid.Parent = handle
 	sword.Parent = hand.Parent
-	return weld
+	return rigid
 end
 
 return SwordModel
